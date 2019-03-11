@@ -1,0 +1,70 @@
+---
+title: "Cervical Screening 2019"
+author: "David Fong"
+date: "3/11/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Cervical Screening and intensive telephone-based case-finding
+
+
+
+```{r message=FALSE}
+library(tidyverse)
+library(dagitty)
+```
+
+## Theory of Change graph
+
+```{r}
+dag <- downloadGraph("dagitty.net/mHMHYZD") # data for directed acyclic graph model of intervention
+
+```
+
+```{r eval=FALSE, echo=FALSE, fig.width=12, fig.height=8}
+# not needed since a more colourful SVG file is used to display the graph
+plot(dag)
+```
+
+![](cervicalscreeningtelephone.svg)
+
+## Log
+
+--------------------------------------------------------------------------------
+A        Indicator              Verification         Threats
+-------  ---------------------- ----------------     ---------------------------
+Inputs   Telephone invitation   Call log             Lack of response
+
+                                                     Lack of common language
+                                                 
+                                                     Social desirability bias?
+                                                 
+         Letter invitation      Previous letter      Lack of response
+                                in file                                            
+                                           
+                                                     Lack of English literacy
+                                                 
+Outputs  Appointments made                           Appointment is forgotten
+
+         Appointments attended
+         
+         Cervical screening     Cervical
+         (CST) at clinic        screening
+                                results
+         
+         Cervical screening
+         (CST) done elsewhere
+
+Outcome  Improved cervical      Government
+         screening coverage     Practice Incentive
+                                Program reports
+                                (PIP statements)
+                                
+Impact   Reduced cervical                            Vulnerable population
+         cancer rates                                screened
+
+--------------------------------------------------------------------------------
