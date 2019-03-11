@@ -1,13 +1,35 @@
 ---
 title: "Cervical Screening 2019"
 author: "David Fong"
-date: "3/11/2019"
+date: "11th March 2019"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+## Cervical screening benefits
+
+Regular cervical cancer screening reduces the risk of cancer incidence by approximately a factor of 3 to 4 compard to no screening (for women aged 35 to 79 years), and reduces mortality by a factor of 4 to 10. Regular cervical cancer screening reduces the risk of cervical cancer incidence and death by up to a factor of two compared to irregular cervical cancer screening[^1].
+
+[^1]:“Impact of cervical screening on cervical cancer mortality: estimation using stage-specific results from a nested case-control study” Landy, Pesola, Castanon and Sasieni. British Journal of Cancer (2016) **115**, 1140-1146
+
+## Cervical screening outcome payment
+
+Current eligible practice population : 813 (according to May 2017 PIP data)
+
+Annual outcome payment : $3 per eligible patient = $2439. Never yet received
+
+* Current cervical screening coverage rate (according to 2017 PIP data) = 66.79%
+* Target Diabetes SIP claim rate to claim annual outcome payement = 70%
+
+Potential additional Cervical SIP revenue, if target Cervical SIP claim rate achieved, assuming that half of additionally screened women can have a cervical SIP item claimed
+= (70-66.79)/100 * 813 * $35 * 0.5 =  $456.7
+
+Additional revenue if Cervical Outcome Payment achieved
+= $2439 (annual outcome payment) + $456.7 (additional cervical SIP revenue)
+= $2895.7
 
 ## Cervical Screening and intensive telephone-based case-finding
 
@@ -21,7 +43,7 @@ library(dagitty)
 ## Theory of Change graph
 
 ```{r}
-dag <- downloadGraph("dagitty.net/mHMHYZD") # data for directed acyclic graph model of intervention
+dag <- downloadGraph("dagitty.net/mannE14") # data for directed acyclic graph model of intervention
 
 ```
 
@@ -32,39 +54,44 @@ plot(dag)
 
 ![](cervicalscreeningtelephone.svg)
 
-## Log
+## Log Frame
 
---------------------------------------------------------------------------------
-A        Indicator              Verification         Threats
--------  ---------------------- ----------------     ---------------------------
-Inputs   Telephone invitation   Call log             Lack of response
+-----------------------------------------------------------------------------------
+Objectives  Indicator              Verification         Assumptions/Threats
+Heirarchy
+----------  ---------------------- ----------------     ---------------------------
+Inputs      Telephone invitation   Call log             Telephone answered
 
-                                                     Lack of common language
+                                                        Common language used
+                                                   
+                                                        Social desirability bias?
                                                  
-                                                     Social desirability bias?
-                                                 
-         Letter invitation      Previous letter      Lack of response
-                                in file                                            
+            Letter invitation      Previous letter      Letter read
+                                   in file                                            
                                            
-                                                     Lack of English literacy
+                                                        English literacy
+                                                        
+                                                        Letter persuasive
                                                  
-Outputs  Appointments made                           Appointment is forgotten
+Outputs     Appointments made                           Appropriate cervical
+                                                        screening already
+                                                        done elsewhere
 
-         Appointments attended
+            Appointments attended                       Appointment is remembered
          
-         Cervical screening     Cervical
-         (CST) at clinic        screening
-                                results
+            Cervical screening     Cervical
+            (CST) at clinic        screening
+                                   results
          
-         Cervical screening
-         (CST) done elsewhere
+            Cervical screening
+            (CST) done elsewhere
 
-Outcome  Improved cervical      Government
-         screening coverage     Practice Incentive
-                                Program reports
-                                (PIP statements)
+Outcome     Improved cervical      Government
+            screening coverage     Practice Incentive
+                                   Program reports
+                                   (PIP statements)
                                 
-Impact   Reduced cervical                            Vulnerable population
-         cancer rates                                screened
+Impact      Reduced cervical                            Vulnerable population
+            cancer rates                                screened
 
---------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
