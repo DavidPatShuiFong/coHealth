@@ -17,19 +17,19 @@ Regular cervical cancer screening reduces the risk of cancer incidence by approx
 
 ## Cervical screening outcome payment
 
-Current eligible practice population : 813 (according to May 2017 PIP data)
+Current eligible practice population : 754 (according to May 2018 PIP data)
 
-Annual outcome payment : $3 per eligible patient = $2439. Never yet received
+Annual outcome payment : $3 per eligible patient = $2262. Never yet received
 
-* Current cervical screening coverage rate (according to 2017 PIP data) = 66.79%
+* Current cervical screening coverage rate (according to 2017 PIP data) = 61.14%
 * Target Diabetes SIP claim rate to claim annual outcome payement = 70%
 
 Potential additional Cervical SIP revenue, if target Cervical SIP claim rate achieved, assuming that half of additionally screened women can have a cervical SIP item claimed
-= (70-66.79)/100 * 813 * $35 * 0.5 =  $456.7
+= (70-61.14)/100 * 754 * $35 * 0.5 =  $1169.1
 
 Additional revenue if Cervical Outcome Payment achieved
-= $2439 (annual outcome payment) + $456.7 (additional cervical SIP revenue)
-= $2895.7
+= $2262 (annual outcome payment) + $1169.1 (additional cervical SIP revenue)
+= $3431.1
 
 ## Cervical Screening and intensive telephone-based case-finding
 
