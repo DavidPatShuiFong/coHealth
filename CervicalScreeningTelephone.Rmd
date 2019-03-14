@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Cervical screening benefits
 
-Regular cervical cancer screening reduces the risk of cancer incidence by approximately a factor of 3 to 4 compard to no screening (for women aged 35 to 79 years), and reduces mortality by a factor of 4 to 10. Regular cervical cancer screening reduces the risk of cervical cancer incidence and death by up to a factor of two compared to irregular cervical cancer screening[^1].
+Regular cervical cancer screening reduces the risk of cancer incidence by approximately a factor of 3 to 4 compared to no screening (for women aged 35 to 79 years), and reduces mortality by a factor of 4 to 10. Regular cervical cancer screening reduces the risk of cervical cancer incidence and death by up to a factor of two compared to irregular cervical cancer screening[^1].
 
 [^1]:“Impact of cervical screening on cervical cancer mortality: estimation using stage-specific results from a nested case-control study” Landy, Pesola, Castanon and Sasieni. British Journal of Cancer (2016) **115**, 1140-1146
 
@@ -22,7 +22,7 @@ Current eligible practice population : 754 (according to May 2018 PIP data)
 Annual outcome payment : $3 per eligible patient = $2262. Never yet received
 
 * Current cervical screening coverage rate (according to 2017 PIP data) = 61.14%
-* Target Diabetes SIP claim rate to claim annual outcome payement = 70%
+* Target Diabetes SIP claim rate to claim annual outcome payment = 70%
 
 Potential additional Cervical SIP revenue, if target Cervical SIP claim rate achieved, assuming that half of additionally screened women can have a cervical SIP item claimed
 = (70-61.14)/100 * 754 * $35 * 0.5 =  $1169.1
@@ -58,7 +58,7 @@ plot(dag)
 
 -----------------------------------------------------------------------------------
 Objectives  Indicator              Verification         Assumptions/Threats
-Heirarchy
+Hierarchy
 ----------  ---------------------- ----------------     ---------------------------
 Inputs      Telephone invitation   Call log             Telephone answered
 
