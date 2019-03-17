@@ -15,6 +15,30 @@ Regular cervical cancer screening reduces the risk of cancer incidence by approx
 
 [^1]:“Impact of cervical screening on cervical cancer mortality: estimation using stage-specific results from a nested case-control study” Landy, Pesola, Castanon and Sasieni. British Journal of Cancer (2016) **115**, 1140-1146
 
+## Extent of under-screening
+
+According to Practice Incentive program data (May 2018), 61.14% of eligible patients at coHealth Kensington were screened appropriately for cervical cancer.
+
+Using SQL searches in the Best Practice database, as of 1st March 2019 there were 857 eligible patients who were active in seeing the clinic. Of those, 290 patients (34%) had either no recording of a cervical screening, or no cervical screening recording for the previous forty-five months. At the time of writing, cervical screening done forty-five (45) or more months previously would be the 'Pap' smear, which needs to be repeated in twenty-four (24) months.
+
+Note : For the purpose of this document, 'eligible' patients are females aged between 25 and 75 years, who are not otherwise marked as not requiring future cervical screening. 'Active' patients refers to patients who have had three or more contacts with the clinic in the previous two years, including at least once in the previous six months. If the information is available (as it was in March 2019, but not in preceding years), the 'previous six months' contact is a 'billed visit'.
+
+### Rate of cervical screening in patients who are underscreened
+
+The number of active and eligible patients who either had no history of screening or were very overdue (more than 45 months old screen, when screening is due every 24 months) as of 1st March 2018 was 270 patients.
+
+Over the next three months, twelve of those patients (4.4%) had a recorded cervical screening.
+
+In the next three months after that, an additional six patients (2.2%) had a recorded cervical screening.
+
+SQL search code used to count historical screening found at the end of this document. Note that no billing information is available prior to June 2018, so the definition of an 'active' patient is slightly different.
+
+## Current strategies to promote cervical screening.
+
+During visits for other purposes in a primary care clinic, patients are, where possible, recommended to have cervical screening. This can be aided by automated 'real-time' tools such as Doctor's Control Panel, and the availability of a womens' health nurse who is available to do cervical screening.
+
+In addition, the clinic runs a reminder system which invites patients to repeat the cervical screening when the next screening is due. This is done with a letter, in English. The government also uses letters to remind people when the next cervical screening is due. Until very recenty, the 'reminder' interval has been two years, as cervical screening was done with the 'Pap' test until 2018.
+
 ## Cervical screening outcome payment
 
 Current eligible practice population : 754 (according to May 2018 PIP data)
@@ -32,6 +56,12 @@ Additional revenue if Cervical Outcome Payment achieved
 = $3431.1
 
 # Cervical Screening and intensive telephone-based case-finding
+
+## Methods
+
+* Identify active eligible women who either have no recorded cervical screening or whose last recorded screening is very overdue (most recent result 45 months or older)
+* One of two surveyors (Dr Buddini, or womens' health nurse) will invite the woman to participate in cervical screening. The invitation will be done by telephone, using a telephone interpreter if required.
+* If the invitation is accepted, an appointment is made for cervical screening.
 
 ```{r message = FALSE, results = 'hide', warning = FALSE}
 library(tidyverse)
@@ -91,9 +121,12 @@ Outputs     Appointments made      Appointment log      Appropriate cervical
 
             Appointments attended  Appointment book     Appointment is remembered
          
-            Cervical screening     Cervical
-            (CST) at clinic        screening
-                                   results
+            Cervical screening     Cervical             Some cervical screening will
+            (CST) at clinic        screening            be the result of the telephone
+                                   results (can         invitation, others might
+                                   be searched          screen for other reasons.
+                                   using clinical
+                                   database).
          
             Cervical screening
             (CST) done elsewhere
@@ -119,6 +152,26 @@ Impact      Reduced cervical       HPV detected         Vulnerable population
 
 -----------------------------------------------------------------------------------
 
+## Variables to measure
+
+* **Age**
+* **Refugee or asylum seeker** Possible proxy for less English literacy skills, or different health literacy.
+* **Interpreter usually required** Usually recorded in clinical notes
+* **Patient seen by surveyor previously** Could effect response rate
+* **Patient has had cervical screening before?**
+* **Date of last recorded cervical screening**
+* **Number of attempts to contact patient by telephone**
+* **Patient contacted by telephone**
+* **Interpreter used during telephone invitation?**
+* **Patient had cervical screening done elsewhere appropriately?**
+* **Patient ineligible for cervical screening** e.g. has had hysterectomy
+* **Appointment made**
+* **Appointment attended**
+* **Cervical screening done at booked appointent as result of telephone invitation**
+* **Cervical screening changes requiring review or referral**
+* **Referral to gynaecologist as result of cervical screening**
+
+# Data and Code
 
 ## Read Data
 
@@ -191,6 +244,48 @@ two years.
 ```{r}
 ggplot(population, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 25)
+```
+
+Total population : `r nrow(population)`
+
+### Power calculation
+
+Previous proportion of under-screened patients who were screened in the three months after March 2018 was 4.4%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
+
+```{r}
+power.prop.test(n = nrow(population)/2,
+                p1 = 0.044,
+                # the measured proportion with recorded cervical screen under
+                # 'control' conditions
+                power=0.8, sig.level=0.05,
+                alternative = "two.sided")
+```
+
+This is similar to estimated minimum detectable effect size using the equation:
+
+$EffectSize = (t_{1-\kappa}+t_\alpha)*\sqrt{\frac{1}{p(1-p)}}*\sqrt{\frac{\sigma^2}{N}}$
+
+```{r}
+p1 <- 0.044        # our previously observed proportion of women
+                   # who had cervical screening (CST) over three months
+p2 <- 0.1372842    # our 'guess' of what the 'treatment' group who had CST over
+                   # three months. this guess was actually informed by
+                   # above power calculation, however!
+p_avg <- (p1+p2)/2 # the average proportion of women who might
+                   # have cervical screening at the end of the study
+                   
+abs(qnorm(0.2)+qnorm(0.025))*sqrt(1/((0.5)*(1-0.5)))*sqrt((p_avg)*(1-p_avg)/290)
+```
+
+Previous proportion of under-screened patients who were screened in the six months after March 2018 was 6.6%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
+
+```{r}
+power.prop.test(n = nrow(population)/2,
+                p1 = 0.066,
+                # the measured proportion with recorded cervical screen under
+                # 'control' conditions
+                power=0.8, sig.level=0.05,
+                alternative = "two.sided")
 ```
 
 ## Choosing treatment and control groups
@@ -312,4 +407,188 @@ Control group 2
 ```{r}
 ggplot(control2, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
+```
+
+## SQL code
+
+### Finding patients eligible for the study
+
+Find eligible patients (female, age criteria), who are active patients (defined
+by three or more contacts in the past two years, including one *billed* visit in
+the past six months), who have not had cervical screening detected found in the
+PapSmear table or the Investigations table.
+
+Note that there is another table 'ObGyn' which should contain the most recent
+cervical screening result, but unfortunately, 'over-chose' 5 patients (found 295
+patients, instead of '290' as found using this search.)
+
+```{sql eval = FALSE}
+SELECT *
+
+FROM BPS_Patients
+  WHERE StatusText = 'Active'
+  AND Sex = 'Female'
+  AND DOB BETWEEN  DateAdd(Year,-75,'20190301') AND DateAdd(Year,-25,'20190301')
+
+AND InternalID IN (SELECT InternalID
+    FROM Visits v
+    INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
+            ('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
+            ('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
+            ('%grace ho%'))
+        AS ProviderName(Name)
+        ON v.DrName LIKE ProviderName.Name
+
+    WHERE VisitDate BETWEEN DateAdd(Year,-2,'20190301') AND '20190301'
+    AND RecordStatus = 1
+
+    GROUP BY internalid
+    HAVING count(internalid) >= 3)
+
+AND InternalID IN (SELECT InternalID
+    FROM Invoices WHERE InvoiceID IN (SELECT InvoiceID
+        FROM Services
+            WHERE Recordstatus = 1
+            AND Servicedate > DateAdd(Month, -6, '20190301'))) 
+
+AND InternalID NOT IN (SELECT InternalID
+    FROM PapSmears
+      WHERE PapDate > DATEADD(Month, -45, '20190301')
+    -- CST not extremely overdue (>45 months old)
+    )
+AND InternalID NOT IN (SELECT InternalID
+    FROM Investigations
+      WHERE (
+        TestName LIKE '%CERVICAL SCREENING%'
+         OR TestName LIKE '%PAP SMEAR%')
+      AND ReportDate >  DATEADD(Month, -45, '20190301')
+    -- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
+    )
+AND InternalID NOT IN (SELECT InternalID
+    FROM ObsGynDetail
+      WHERE NoPap=1
+    -- for some reason, Pap/CST marked as no longer required
+    )
+ 
+ORDER BY surname, firstname
+
+```
+
+#### Additional code to detect if recorded history of refugee or asylum seeker status
+
+```{sql eval = FALSE}
+AND (
+    InternalID IN
+        (SELECT InternalID FROM PastHistory WHERE ItemCode = 13155 AND RecordStatus = 1)
+    OR 
+    InternalID IN 
+        (SELECT InternalID FROM PastHistory WHERE ItemCode = 13154 AND RecordStatus = 1)
+    )
+```
+
+#### Additional code to detect if contacted by a specific clinician (Dr Buddini).
+
+```{sql eval = FALSE}
+AND InternalID IN (SELECT InternalID
+    FROM Visits v
+    INNER JOIN (VALUES('%ekanayake%'))
+        AS ProviderName(Name)
+        ON v.DrName LIKE ProviderName.Name
+    WHERE VisitDate BETWEEN DateAdd(Year,-2,'20190301') AND '20190301'
+    AND RecordStatus = 1
+
+    GROUP BY internalid
+    HAVING count(internalid) >= 1)
+```
+
+### Finding historical cervical screening rates among the under-screened
+
+Below code finds 'active' patients (5 contacts in two years, include one
+contact within the previous six months) preceding 1st March 2018. Excludes
+patients who are marked for 'no cervical screening'.
+
+Note that the 'recent' visit definition is different to seeking patients
+eligible for the study, because no billing data is available prior to 
+June 2018.
+
+It then further restricts the patients to those who had a cervical
+screening test in the next three months.
+
+```{sql eval = FALSE}
+SELECT *
+
+FROM BPS_Patients
+  WHERE StatusText = 'Active'
+  AND Sex = 'Female'
+  AND DOB BETWEEN  DateAdd(Year,-75,'20180301') AND DateAdd(Year,-25,'20180301')
+
+AND InternalID IN (SELECT InternalID
+    FROM Visits v
+    INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
+            ('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
+            ('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
+            ('%grace ho%'))
+        AS ProviderName(Name)
+        ON v.DrName LIKE ProviderName.Name
+
+    WHERE VisitDate BETWEEN DateAdd(Year,-2,'20180301') AND '20180301'
+    AND RecordStatus = 1
+
+    GROUP BY internalid
+    HAVING count(internalid) >= 3)
+
+AND InternalID IN (SELECT InternalID
+    FROM Visits v
+	INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
+            ('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
+            ('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
+            ('%grace ho%'))
+        AS ProviderName(Name)
+        ON v.DrName LIKE ProviderName.Name
+
+    WHERE VisitDate BETWEEN DateAdd(Month,-6,'20180301') AND '20180301'
+    AND RecordStatus = 1
+
+    GROUP BY internalid
+    HAVING count(internalid) >= 1)
+
+AND InternalID NOT IN (SELECT InternalID
+    FROM PapSmears
+      WHERE PapDate > DATEADD(Month, -45, '20180301')
+	  AND PapDate < '20180301'
+    -- CST not extremely overdue (>45 months old)
+    )
+AND InternalID NOT IN (SELECT InternalID
+    FROM Investigations
+      WHERE (
+        TestName LIKE '%CERVICAL SCREENING%'
+         OR TestName LIKE '%PAP SMEAR%')
+      AND ReportDate >  DATEADD(Month, -45, '20180301')
+	  AND ReportDate <  '20180301'
+
+    -- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
+    )
+AND InternalID IN (SELECT InternalID
+    FROM PapSmears
+      WHERE PapDate >= '20180301'
+	  AND PapDate < DATEADD(Month, 3, '20180301')
+    -- CST done in next three months
+    )
+AND InternalID IN (SELECT InternalID
+    FROM Investigations
+      WHERE (
+        TestName LIKE '%CERVICAL SCREENING%'
+         OR TestName LIKE '%PAP SMEAR%')
+      AND ReportDate >  '20180301'
+	  AND ReportDate <  DATEADD(Month, 3, '20180301')
+
+    -- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
+    )
+AND InternalID NOT IN (SELECT InternalID
+    FROM ObsGynDetail
+      WHERE NoPap=1
+    -- for some reason, Pap/CST marked as no longer required
+    )
+ 
+ORDER BY surname, firstname
 ```
