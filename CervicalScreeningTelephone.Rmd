@@ -253,27 +253,35 @@ Total population : `r nrow(population)`
 Previous proportion of under-screened patients who were screened in the three months after March 2018 was 4.4%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
 
 ```{r}
-power.prop.test(n = nrow(population)/2,
-                p1 = 0.044,
-                # the measured proportion with recorded cervical screen under
-                # 'control' conditions
-                power=0.8, sig.level=0.05,
-                alternative = "two.sided")
+power_3month <- power.prop.test(n = nrow(population)/2,
+                                p1 = 0.044,
+                                # the measured proportion with recorded cervical screen
+                                # under 'control' conditions
+                                power=0.8, sig.level=0.05,
+                                alternative = "two.sided")
+
+power_3month
+
+paste("Minimum detectable effect : ", power_3month$p2 - power_3month$p1)
+
 ```
 
 This is similar to estimated minimum detectable effect size using the equation:
 
-$EffectSize = (t_{1-\kappa}+t_\alpha)*\sqrt{\frac{1}{p(1-p)}}*\sqrt{\frac{\sigma^2}{N}}$
+$EffectSize = (t_{1-\kappa}+t_\alpha)*\sqrt{\frac{1}{P(1-P)}}*\sqrt{\frac{\sigma^2}{N}}$
+
+where $t_{1-\kappa}$ is the power, $t_\alpha$ is the significance level, $P$ is the proportion in treatment, $\sigma^2$ is the variance and $N$ is the sample size.
 
 ```{r}
 p1 <- 0.044        # our previously observed proportion of women
                    # who had cervical screening (CST) over three months
-p2 <- 0.1372842    # our 'guess' of what the 'treatment' group who had CST over
+p2 <- 0.1383313    # our 'guess' of what the 'treatment' group who had CST over
                    # three months. this guess was actually informed by
                    # above power calculation, however!
 p_avg <- (p1+p2)/2 # the average proportion of women who might
                    # have cervical screening at the end of the study
-                   
+                   # variance of binomial is p(1-p)
+
 abs(qnorm(0.2)+qnorm(0.025))*sqrt(1/((0.5)*(1-0.5)))*sqrt((p_avg)*(1-p_avg)/290)
 ```
 
@@ -282,8 +290,8 @@ Previous proportion of under-screened patients who were screened in the six mont
 ```{r}
 power.prop.test(n = nrow(population)/2,
                 p1 = 0.066,
-                # the measured proportion with recorded cervical screen under
-                # 'control' conditions
+                # the measured proportion with recorded cervical screen
+                # under 'control' conditions
                 power=0.8, sig.level=0.05,
                 alternative = "two.sided")
 ```
