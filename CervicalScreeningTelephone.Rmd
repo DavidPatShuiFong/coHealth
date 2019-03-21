@@ -422,7 +422,7 @@ ggplot(control2, aes(x = Age, fill=Subgroup)) +
 ## Export sub-groups to Excel file for surveyor use.
 
 Re-attach patient names and demographic details to
-sub-groups, and export to Excel file for use by
+sub-groups, and export to Excel file (Phase 1 = Treat, Phase 2 = Control) for use by
 surveyors.
 
 ```{r eval = FALSE}
@@ -431,60 +431,59 @@ surveyors.
 
 patient_details <- read.csv("20190301CSTpopulation_details.csv")
 # file with patient details
+patient_details <- patient_details %>%
+  select(c("INTERNALID", "SURNAME", "FIRSTNAME", "MIDDLENAME", "PREFERREDNAME", "TITLE", "DOB", "AGE", "RECORDNO"))
+# select columns required for export
 
 treatment1_details <- treatment1 %>%
   select(c("INTERNALID", "AgeGroup5")) %>% 
   # will store AgeGroup5 groups in separate sheets
-  left_join(patient_details, by = "INTERNALID") %>%
-  select(-c("PENSIONNO", "INTERNALID")) # InternalID is not needed any more!
+  left_join(patient_details, by = "INTERNALID")
 
 treatment2_details <- treatment2 %>%
   select(c("INTERNALID", "AgeGroup5")) %>% 
   # will store AgeGroup5 groups treatment in separate sheets
-  left_join(patient_details, by = "INTERNALID") %>%
-  select(-c("PENSIONNO", "INTERNALID")) # InternalID is not needed any more!
+  left_join(patient_details, by = "INTERNALID")
 
 control1_details <- control1 %>%
   select(c("INTERNALID", "AgeGroup5")) %>% 
   # will store AgeGroup5 groups in separate sheets
-  left_join(patient_details, by = "INTERNALID") %>%
-  select(-c("PENSIONNO", "INTERNALID")) # InternalID is not needed any more!
+  left_join(patient_details, by = "INTERNALID")
 
 control2_details <- control2 %>%
   select(c("INTERNALID", "AgeGroup5")) %>% 
   # will store AgeGroup5 groups in separate sheets
-  left_join(patient_details, by = "INTERNALID") %>%
-  select(-c("PENSIONNO", "INTERNALID")) # InternalID is not needed any more!
+  left_join(patient_details, by = "INTERNALID")
 
 wb_treat <- createWorkbook() # create blank workbook
 
 for (i in levels(treatment1_details$AgeGroup5)) {
   subsection1 <- treatment1_details[treatment1_details$AgeGroup5 == i,]
-  sheetname1 <- paste("Treat Group 1 - ", i)
+  sheetname1 <- paste("Phase 1 Group 1 - ", i)
   addWorksheet(wb_treat, sheetname1)
   writeData(wb_treat, sheetname1, subsection1)
   subsection2 <- treatment2_details[treatment2_details$AgeGroup5 == i,]
-  sheetname2 <- paste("Treat Group 2 - ", i)
+  sheetname2 <- paste("Phase 1 Group 2 - ", i)
   addWorksheet(wb_treat, sheetname2)
   writeData(wb_treat, sheetname2, subsection2)
 }
 
-saveWorkbook(wb_treat, file = "20190301CSTTreatmentGroups.xlsx", overwrite = TRUE)
+saveWorkbook(wb_treat, file = "20190301CSTPhase1Groups.xlsx", overwrite = TRUE)
 
 wb_control <- createWorkbook() # create blank workbook
 
 for (i in levels(control1_details$AgeGroup5)) {
   subsection1 <- control1_details[control1_details$AgeGroup5 == i,]
-  sheetname1 <- paste("Control Group 1 - ", i)
+  sheetname1 <- paste("Phase 2 Group 1 - ", i)
   addWorksheet(wb_control, sheetname1)
   writeData(wb_control, sheetname1, subsection1)
   subsection2 <- control2_details[control2_details$AgeGroup5 == i,]
-  sheetname2 <- paste("Control Group 2 - ", i)
+  sheetname2 <- paste("Phase 2 Group 2 - ", i)
   addWorksheet(wb_control, sheetname2)
   writeData(wb_control, sheetname2, subsection2)
 }
 
-saveWorkbook(wb_control, file = "20190301CSTControlGroups.xlsx", overwrite = TRUE)
+saveWorkbook(wb_control, file = "20190301CSTPhase2Groups.xlsx", overwrite = TRUE)
 
 
 ```
