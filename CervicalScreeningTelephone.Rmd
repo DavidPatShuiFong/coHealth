@@ -27,9 +27,9 @@ Note : For the purpose of this document, 'eligible' patients are females aged be
 
 The number of active and eligible patients who either had no history of screening or were very overdue (more than 45 months old screen, when screening is due every 24 months) as of 1st March 2018 was 270 patients.
 
-Over the next three months, twelve of those patients (4.4%) had a recorded cervical screening.
+Over the next three months, fourteen of those patients (5.2%) had a recorded cervical screening.
 
-In the next three months after that, an additional six patients (2.2%) had a recorded cervical screening.
+In the next three months after that, an additional ten patients (3.7%) had a recorded cervical screening.
 
 SQL search code used to count historical screening found at the end of this document. Note that no billing information is available prior to June 2018, so the definition of an 'active' patient is slightly different.
 
@@ -252,11 +252,11 @@ Total population : `r nrow(population)`
 
 ### Power calculation
 
-Previous proportion of under-screened patients who were screened in the three months after March 2018 was 4.4%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
+Previous proportion of under-screened patients who were screened in the three months after March 2018 was 5.2%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
 
 ```{r}
 power_3month <- power.prop.test(n = nrow(population)/2,
-                                p1 = 0.044,
+                                p1 = 0.05185,
                                 # the measured proportion with recorded cervical screen
                                 # under 'control' conditions
                                 power=0.8, sig.level=0.05,
@@ -275,23 +275,23 @@ $EffectSize = (t_{1-\kappa}+t_\alpha)*\sqrt{\frac{1}{P(1-P)}}*\sqrt{\frac{\sigma
 where $t_{1-\kappa}$ is the power, $t_\alpha$ is the significance level, $P$ is the proportion in treatment, $\sigma^2$ is the variance and $N$ is the sample size.
 
 ```{r}
-p1 <- 0.044        # our previously observed proportion of women
+p1 <- 0.05185        # our previously observed proportion of women
                    # who had cervical screening (CST) over three months
-p2 <- 0.1383313    # our 'guess' of what the 'treatment' group who had CST over
+p2 <- 0.1507374    # our 'guess' of what the 'treatment' group who had CST over
                    # three months. this guess was actually informed by
                    # above power calculation, however!
 p_avg <- (p1+p2)/2 # the average proportion of women who might
                    # have cervical screening at the end of the study
                    # variance of binomial is p(1-p)
 
-abs(qnorm(0.2)+qnorm(0.025))*sqrt(1/((0.5)*(1-0.5)))*sqrt((p_avg)*(1-p_avg)/290)
+abs(qnorm(0.8)+qnorm(0.975))*sqrt(1/((0.5)*(1-0.5)))*sqrt((p_avg)*(1-p_avg)/290)
 ```
 
-Previous proportion of under-screened patients who were screened in the six months after March 2018 was 6.6%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
+Previous proportion of under-screened patients who were screened in the six months after March 2018 was 8.9%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
 
 ```{r}
 power.prop.test(n = nrow(population)/2,
-                p1 = 0.066,
+                p1 = 0.08889,
                 # the measured proportion with recorded cervical screen
                 # under 'control' conditions
                 power=0.8, sig.level=0.05,
@@ -618,7 +618,7 @@ AND InternalID IN (SELECT InternalID
 
 AND InternalID IN (SELECT InternalID
     FROM Visits v
-	INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
+    INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
             ('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
             ('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
             ('%grace ho%'))
@@ -634,7 +634,7 @@ AND InternalID IN (SELECT InternalID
 AND InternalID NOT IN (SELECT InternalID
     FROM PapSmears
       WHERE PapDate > DATEADD(Month, -45, '20180301')
-	  AND PapDate < '20180301'
+      AND PapDate < '20180301'
     -- CST not extremely overdue (>45 months old)
     )
 AND InternalID NOT IN (SELECT InternalID
@@ -643,26 +643,26 @@ AND InternalID NOT IN (SELECT InternalID
         TestName LIKE '%CERVICAL SCREENING%'
          OR TestName LIKE '%PAP SMEAR%')
       AND ReportDate >  DATEADD(Month, -45, '20180301')
-	  AND ReportDate <  '20180301'
+      AND ReportDate <  '20180301'
 
     -- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
     )
-AND InternalID IN (SELECT InternalID
+AND (InternalID IN (SELECT InternalID
     FROM PapSmears
       WHERE PapDate >= '20180301'
-	  AND PapDate < DATEADD(Month, 3, '20180301')
+      AND PapDate < DATEADD(Month, 3, '20180301')
     -- CST done in next three months
     )
-AND InternalID IN (SELECT InternalID
+    OR InternalID IN (SELECT InternalID
     FROM Investigations
       WHERE (
         TestName LIKE '%CERVICAL SCREENING%'
          OR TestName LIKE '%PAP SMEAR%')
       AND ReportDate >  '20180301'
-	  AND ReportDate <  DATEADD(Month, 3, '20180301')
+      AND ReportDate <  DATEADD(Month, 3, '20180301')
 
     -- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
-    )
+    ))
 AND InternalID NOT IN (SELECT InternalID
     FROM ObsGynDetail
       WHERE NoPap=1
