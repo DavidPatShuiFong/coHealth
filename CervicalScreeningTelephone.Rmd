@@ -21,7 +21,7 @@ According to Practice Incentive program data (May 2018), 61.14% of eligible pati
 
 Using SQL searches in the Best Practice database, as of 1st March 2019 there were 857 eligible patients who were active in seeing the clinic. Of those, 290 patients (34%) had either no recording of a cervical screening, or no cervical screening recording for the previous forty-five months. At the time of writing, cervical screening done forty-five (45) or more months previously would be the 'Pap' smear, which needs to be repeated in twenty-four (24) months.
 
-Note : For the purpose of this document, 'eligible' patients are females aged between 25 and 75 years, who are not otherwise marked as not requiring future cervical screening. 'Active' patients refers to patients who have had three or more contacts with the clinic in the previous two years, including at least once in the previous six months. If the information is available (as it was in March 2019, but not in preceding years), the 'previous six months' contact is a 'billed visit'.
+Note : For the purpose of this document, 'eligible' patients are females aged between 25 and 75 years, who are not otherwise marked as not requiring future cervical screening. 'Active' patients refers to patients who have had three or more contacts with the clinic in the previous twenty-five months, including at least once in the previous seven months. If the information is available (as it was in March 2019, but not in preceding years), the 'previous seven months' contact is a 'billed visit'.
 
 ### Rate of cervical screening in patients who are underscreened
 
@@ -178,9 +178,9 @@ Impact      Reduced cervical       HPV detected         Vulnerable population
 ## Read Data
 
 ```{r}
-population <- as_tibble(read.csv("20190301CSTpopulation.csv"))
-seen_Buddini <- as_tibble(read.csv("20190301CSTBuddini.csv"))
-refugeeasylum <- as_tibble(read.csv("20190301CSTRefugeeAsylum.csv"))
+population <- as_tibble(read.csv("20190401CSTpopulation.csv"))
+seen_Buddini <- as_tibble(read.csv("20190401CSTBuddini.csv"))
+refugeeasylum <- as_tibble(read.csv("20190401CSTRefugeeAsylum.csv"))
 ```
 
 ## Convert data
@@ -429,7 +429,7 @@ surveyors.
 # set {r eval = FALSE when 'knitting' to form a HTML file}
 # as identifying data should not be in a public space!
 
-patient_details <- read.csv("20190301CSTpopulation_details.csv")
+patient_details <- read.csv("20190401CSTpopulation_details.csv")
 # file with patient details
 patient_details <- patient_details %>%
   select(c("INTERNALID", "SURNAME", "FIRSTNAME", "MIDDLENAME", "PREFERREDNAME", "TITLE", "DOB", "AGE", "RECORDNO"))
@@ -468,7 +468,7 @@ for (i in levels(treatment1_details$AgeGroup5)) {
   writeData(wb_treat, sheetname2, subsection2)
 }
 
-saveWorkbook(wb_treat, file = "20190301CSTPhase1Groups.xlsx", overwrite = TRUE)
+saveWorkbook(wb_treat, file = "20190401CSTPhase1Groups.xlsx", overwrite = TRUE)
 
 wb_control <- createWorkbook() # create blank workbook
 
@@ -483,7 +483,7 @@ for (i in levels(control1_details$AgeGroup5)) {
   writeData(wb_control, sheetname2, subsection2)
 }
 
-saveWorkbook(wb_control, file = "20190301CSTPhase2Groups.xlsx", overwrite = TRUE)
+saveWorkbook(wb_control, file = "20190401CSTPhase2Groups.xlsx", overwrite = TRUE)
 
 
 ```
@@ -507,7 +507,7 @@ SELECT *
 FROM BPS_Patients
   WHERE StatusText = 'Active'
   AND Sex = 'Female'
-  AND DOB BETWEEN  DateAdd(Year,-75,'20190301') AND DateAdd(Year,-25,'20190301')
+  AND DOB BETWEEN  DateAdd(Year,-75,'20190401') AND DateAdd(Year,-25,'20190401')
 
 AND InternalID IN (SELECT InternalID
     FROM Visits v
@@ -518,7 +518,7 @@ AND InternalID IN (SELECT InternalID
         AS ProviderName(Name)
         ON v.DrName LIKE ProviderName.Name
 
-    WHERE VisitDate BETWEEN DateAdd(Year,-2,'20190301') AND '20190301'
+    WHERE VisitDate BETWEEN DateAdd(Month,-25,'20190401') AND '20190401'
     AND RecordStatus = 1
 
     GROUP BY internalid
@@ -528,11 +528,11 @@ AND InternalID IN (SELECT InternalID
     FROM Invoices WHERE InvoiceID IN (SELECT InvoiceID
         FROM Services
             WHERE Recordstatus = 1
-            AND Servicedate > DateAdd(Month, -6, '20190301'))) 
+            AND Servicedate > DateAdd(Month, -7, '20190401'))) 
 
 AND InternalID NOT IN (SELECT InternalID
     FROM PapSmears
-      WHERE PapDate > DATEADD(Month, -45, '20190301')
+      WHERE PapDate > DATEADD(Month, -45, '20190401')
     -- CST not extremely overdue (>45 months old)
     )
 AND InternalID NOT IN (SELECT InternalID
@@ -540,7 +540,7 @@ AND InternalID NOT IN (SELECT InternalID
       WHERE (
         TestName LIKE '%CERVICAL SCREENING%'
          OR TestName LIKE '%PAP SMEAR%')
-      AND ReportDate >  DATEADD(Month, -45, '20190301')
+      AND ReportDate >  DATEADD(Month, -45, '20190401')
     -- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
     )
 AND InternalID NOT IN (SELECT InternalID
@@ -573,7 +573,7 @@ AND InternalID IN (SELECT InternalID
     INNER JOIN (VALUES('%ekanayake%'))
         AS ProviderName(Name)
         ON v.DrName LIKE ProviderName.Name
-    WHERE VisitDate BETWEEN DateAdd(Year,-2,'20190301') AND '20190301'
+    WHERE VisitDate BETWEEN DateAdd(Month,-25,'20190401') AND '20190401'
     AND RecordStatus = 1
 
     GROUP BY internalid
