@@ -1,7 +1,7 @@
 ---
 title: "Cervical Screening 2019"
 author: "Dr. Buddini Ekanayake & Dr. David Fong"
-date: "16th March 2019"
+date: "31st March 2019"
 output: html_document
 ---
 
@@ -225,7 +225,7 @@ population <- population %>%
   )) %>%
   mutate(Subgroup = as.factor(Subgroup)) %>%
   mutate(DOB = dmy(DOB)) %>% # change into standard R date
-  mutate(Age = age(DOB, age.day = as.Date("2019/03/01"))) %>%
+  mutate(Age = age(DOB, age.day = as.Date("2019/04/01"))) %>%
   # note that age is on 1st March 2019
   mutate(AgeGroup5 = as.factor((Age %/% 5)*5)) # 5-year age groups, labelled with minimum age
 
@@ -277,14 +277,14 @@ where $t_{1-\kappa}$ is the power, $t_\alpha$ is the significance level, $P$ is 
 ```{r}
 p1 <- 0.05185        # our previously observed proportion of women
                    # who had cervical screening (CST) over three months
-p2 <- 0.1507374    # our 'guess' of what the 'treatment' group who had CST over
+p2 <- 0.1482171    # our 'guess' of what the 'treatment' group who had CST over
                    # three months. this guess was actually informed by
                    # above power calculation, however!
 p_avg <- (p1+p2)/2 # the average proportion of women who might
                    # have cervical screening at the end of the study
                    # variance of binomial is p(1-p)
 
-abs(qnorm(0.8)+qnorm(0.975))*sqrt(1/((0.5)*(1-0.5)))*sqrt((p_avg)*(1-p_avg)/290)
+abs(qnorm(0.8)+qnorm(0.975))*sqrt(1/((0.5)*(1-0.5)))*sqrt((p_avg)*(1-p_avg)/302)
 ```
 
 Previous proportion of under-screened patients who were screened in the six months after March 2018 was 8.9%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
@@ -302,7 +302,7 @@ power.prop.test(n = nrow(population)/2,
 
 Complete randomization within sub-groups defined by age (5 years groups),
 of known refugee or asylum seeker background, and whether seen by 
-Dr Buddini in the past two years.
+Dr Buddini in the past twenty-five months.
 
 ```{r}
 set.seed(215936)
@@ -333,14 +333,14 @@ for (i in levels(population$AgeGroup5)) {
 
 ```
 
-## Treatment group
+## Treatment ("Phase 1") group
 
 ```{r}
 ggplot(treatment, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-## Control group
+## Control ("Phase 2") group
 
 ```{r}
 ggplot(control, aes(x = Age, fill=Subgroup)) +
@@ -391,28 +391,28 @@ for (i in levels(control$AgeGroup5)) {
 
 ```
 
-Treatment group 1
+Treatment ("Phase 1") group 1
 
 ```{r}
 ggplot(treatment1, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-Treatment group 2
+Treatment ("Phase 1") group 2
 
 ```{r}
 ggplot(treatment2, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-Control group 1
+Control ("Phase 2") group 1
 
 ```{r}
 ggplot(control1, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-Control group 2
+Control ("Phase 2") group 2
 
 ```{r}
 ggplot(control2, aes(x = Age, fill=Subgroup)) +
@@ -428,6 +428,13 @@ surveyors.
 ```{r eval = FALSE}
 # set {r eval = FALSE when 'knitting' to form a HTML file}
 # as identifying data should not be in a public space!
+
+RecordingVariables <- matrix(c("Ineligible - reason", "Interpreter needed", "Interpreter used",
+                               "Previously seen by", "Phone attempts", "Message left", "Contact made",
+                               "Declined appt - why", "External result sought",
+                               "Accepted appt", "Date of appt", "Attended appt",
+                               "Screening completed", "Result"), nrow = 1, byrow = FALSE)
+# list of recording variables to add to Excell sheets
 
 patient_details <- read.csv("20190401CSTpopulation_details.csv")
 # file with patient details
@@ -462,10 +469,12 @@ for (i in levels(treatment1_details$AgeGroup5)) {
   sheetname1 <- paste("Phase 1 Group 1 - ", i)
   addWorksheet(wb_treat, sheetname1)
   writeData(wb_treat, sheetname1, subsection1)
+  writeData(wb_treat, sheetname1, RecordingVariables, startCol = 12, colNames = FALSE)
   subsection2 <- treatment2_details[treatment2_details$AgeGroup5 == i,]
   sheetname2 <- paste("Phase 1 Group 2 - ", i)
   addWorksheet(wb_treat, sheetname2)
   writeData(wb_treat, sheetname2, subsection2)
+  writeData(wb_treat, sheetname2, RecordingVariables, startCol = 12, colNames = FALSE)
 }
 
 saveWorkbook(wb_treat, file = "20190401CSTPhase1Groups.xlsx", overwrite = TRUE)
@@ -477,10 +486,12 @@ for (i in levels(control1_details$AgeGroup5)) {
   sheetname1 <- paste("Phase 2 Group 1 - ", i)
   addWorksheet(wb_control, sheetname1)
   writeData(wb_control, sheetname1, subsection1)
+  writeData(wb_control, sheetname1, RecordingVariables, startCol = 12, colNames = FALSE)
   subsection2 <- control2_details[control2_details$AgeGroup5 == i,]
   sheetname2 <- paste("Phase 2 Group 2 - ", i)
   addWorksheet(wb_control, sheetname2)
   writeData(wb_control, sheetname2, subsection2)
+  writeData(wb_control, sheetname2, RecordingVariables, startCol = 12, colNames = FALSE)
 }
 
 saveWorkbook(wb_control, file = "20190401CSTPhase2Groups.xlsx", overwrite = TRUE)
