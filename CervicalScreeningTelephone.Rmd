@@ -434,7 +434,7 @@ RecordingVariables <- matrix(c("Ineligible - reason", "Interpreter needed", "Int
                                "Declined appt - why", "External result sought",
                                "Accepted appt", "Date of appt", "Attended appt",
                                "Screening completed", "Result"), nrow = 1, byrow = FALSE)
-# list of recording variables to add to Excell sheets
+# list of recording variables to add to Excel sheets
 
 patient_details <- read.csv("20190401CSTpopulation_details.csv")
 # file with patient details
