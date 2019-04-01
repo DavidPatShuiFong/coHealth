@@ -425,11 +425,28 @@ Re-attach patient names and demographic details to
 sub-groups, and export to Excel file (Phase 1 = Treat, Phase 2 = Control) for use by
 surveyors.
 
+### Variables added
+
+* *Surveyor* : person conducting telephone contact
+* *Ineligible* : reason (if appropriate) ineligible for Cervical Screening Test (CST) e.g. hysterectomy 
+* *Interpreter needed* and *Interpreter used* : indicated in file that interpreter required? interpreter used?
+* *Previously seen by* : Person previously seen by surveyor?
+* *Phone Attempts* : Number of phone attempts
+* *Message left* : Was message left?
+* *Contact made* : was in-person contact made?
+* *Decline appointment - why* : reason appointment declined
+* *External result sought* : cervical screening test done elsewhere? sought?
+* *Accepted appointment* : Appointment made at coHealth Kensington for CST?
+* *Date of Appt* : Date of appointment made for CST
+* *Attended Appt* : Appointment attended?
+* *Screening Completed* : Cervical screening actually done at attended appointment?
+* *Result* : Result of cervical screening
+
 ```{r eval = FALSE}
 # set {r eval = FALSE when 'knitting' to form a HTML file}
 # as identifying data should not be in a public space!
 
-RecordingVariables <- matrix(c("Ineligible - reason", "Interpreter needed", "Interpreter used",
+RecordingVariables <- matrix(c("Surveyor", "Ineligible - reason", "Interpreter needed", "Interpreter used",
                                "Previously seen by", "Phone attempts", "Message left", "Contact made",
                                "Declined appt - why", "External result sought",
                                "Accepted appt", "Date of appt", "Attended appt",
