@@ -419,13 +419,15 @@ ggplot(control2, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-## Export sub-groups to Excel file for surveyor use.
+## Export sub-groups to files for surveyor use.
+
+### Excel file
 
 Re-attach patient names and demographic details to
 sub-groups, and export to Excel file (Phase 1 = Treat, Phase 2 = Control) for use by
 surveyors.
 
-### Variables added
+#### Variables added
 
 * *Surveyor* : person conducting telephone contact
 * *Ineligible* : reason (if appropriate) ineligible for Cervical Screening Test (CST) e.g. hysterectomy 
@@ -515,6 +517,42 @@ saveWorkbook(wb_control, file = "20190401CSTPhase2Groups.xlsx", overwrite = TRUE
 
 
 ```
+
+### SurveyCTO lists
+
+```{r eval = FALSE}
+# first row has three compulsory titles
+# 'id' - This is the unique ID that identifies each case
+#   use INTERNALID
+# 'label' - This is the label that will be used to identify each case when shown in Collect's user interface
+#   use INTERNALID + Initials + RECORDNO (unfortunately not all listed patients have a RECORDNO)
+# 'formids' - This is the comma-separated list of unique form ID's that are associated with a case
+#   this will be 'cervical_screening_questionnaire'
+
+surveycto_treatment <- rbind(treatment1_details, treatment2_details) %>%
+  select(c("INTERNALID", "FIRSTNAME", "SURNAME", "RECORDNO")) %>%
+  mutate(label = paste0(substring(FIRSTNAME, 1, 1), substring(SURNAME, 1, 1), " ",
+                        INTERNALID, " ", RECORDNO, " ")) %>%
+  mutate(formids = c("cervical_screening_questionnaire")) %>%
+  rename(id = INTERNALID) %>%
+  select(c("id", "label", "formids"))
+
+write.csv(surveycto_treatment, file = "20190401CSTsurveyCTO_Phase1.csv",
+          row.names = FALSE)
+
+surveycto_control <- rbind(control1_details, control2_details) %>%
+  select(c("INTERNALID", "FIRSTNAME", "SURNAME", "RECORDNO")) %>%
+  mutate(label = paste0(substring(FIRSTNAME, 1, 1), substring(SURNAME, 1, 1), " ",
+                        INTERNALID, " ", RECORDNO, " ")) %>%
+  mutate(formids = c("cervical_screening_questionnaire")) %>%
+  rename(id = INTERNALID) %>%
+  select(c("id", "label", "formids"))
+
+write.csv(surveycto_control, file = "20190401CSTsurveyCTO_Phase2.csv",
+          row.names = FALSE)
+
+```
+
 
 ## SQL code
 
