@@ -9,66 +9,33 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Cervical screening benefits
+## Polypharmacy review benefits
 
-Regular cervical cancer screening reduces the risk of cancer incidence by approximately a factor of 3 to 4 compared to no screening (for women aged 35 to 79 years), and reduces mortality by a factor of 4 to 10. Regular cervical cancer screening reduces the risk of cervical cancer incidence and death by up to a factor of two compared to irregular cervical cancer screening[^1].
 
-[^1]:“Impact of cervical screening on cervical cancer mortality: estimation using stage-specific results from a nested case-control study” Landy, Pesola, Castanon and Sasieni. British Journal of Cancer (2016) **115**, 1140-1146
+## Extent of polypharmacy
 
-## Extent of under-screening
 
-According to Practice Incentive program data (May 2018), 61.14% of eligible patients at coHealth Kensington were screened appropriately for cervical cancer.
+### Rate of polypharmacy in patients who are 
 
-Using SQL searches in the Best Practice database, as of 1st March 2019 there were 857 eligible patients who were active in seeing the clinic. Of those, 290 patients (34%) had either no recording of a cervical screening, or no cervical screening recording for the previous forty-five months. At the time of writing, cervical screening done forty-five (45) or more months previously would be the 'Pap' smear, which needs to be repeated in twenty-four (24) months.
+SQL search code 
 
-Note : For the purpose of this document, 'eligible' patients are females aged between 25 and 75 years, who are not otherwise marked as not requiring future cervical screening. 'Active' patients refers to patients who have had three or more contacts with the clinic in the previous twenty-five months, including at least once in the previous seven months. If the information is available (as it was in March 2019, but not in preceding years), the 'previous seven months' contact is a 'billed visit'.
+## Current strategies to combat polypharmacy
 
-### Rate of cervical screening in patients who are underscreened
 
-The number of active and eligible patients who either had no history of screening or were very overdue (more than 45 months old screen, when screening is due every 24 months) as of 1st March 2018 was 270 patients.
 
-Over the next three months, fourteen of those patients (5.2%) had a recorded cervical screening.
-
-In the next three months after that, an additional ten patients (3.7%) had a recorded cervical screening.
-
-SQL search code used to count historical screening found at the end of this document. Note that no billing information is available prior to June 2018, so the definition of an 'active' patient is slightly different.
-
-## Current strategies to promote cervical screening.
-
-During visits for other purposes in a primary care clinic, patients are, where possible, recommended to have cervical screening. This can be aided by automated 'real-time' tools such as Doctor's Control Panel, and the availability of a womens' health nurse who is available to do cervical screening.
-
-In addition, the clinic runs a reminder system which invites patients to repeat the cervical screening when the next screening is due. This is done with a letter, in English. The government also uses letters to remind people when the next cervical screening is due. Until very recenty, the 'reminder' interval has been two years, as cervical screening was done with the 'Pap' test until 2018.
-
-## Cervical screening outcome payment
-
-Current eligible practice population : 754 (according to May 2018 PIP data)
-
-Annual outcome payment : $3 per eligible patient = $2262. Never yet received
-
-* Current cervical screening coverage rate (according to 2017 PIP data) = 61.14%
-* Target Diabetes SIP claim rate to claim annual outcome payment = 70%
-
-Potential additional Cervical SIP revenue, if target Cervical SIP claim rate achieved, assuming that half of additionally screened women can have a cervical SIP item claimed
-= (70-61.14)/100 * 754 * $35 * 0.5 =  $1169.1
-
-Additional revenue if Cervical Outcome Payment achieved
-= $2262 (annual outcome payment) + $1169.1 (additional cervical SIP revenue)
-= $3431.1
-
-# Cervical Screening and intensive telephone-based case-finding
+# Polypharmacy project
 
 ## Methods
 
-* Identify active eligible women who either have no recorded cervical screening or whose last recorded screening is very overdue (most recent result 45 months or older)
-* One of two surveyors (Dr Buddini, or womens' health nurse) will invite the woman to participate in cervical screening. The invitation will be done by telephone, using a telephone interpreter if required.
-* If the invitation is accepted, an appointment is made for cervical screening.
+* Identify polypharmacy
 
 ```{r message = FALSE, results = 'hide', warning = FALSE}
 library(tidyverse)
 library(lubridate)
 library(xlsx)
 library(openxlsx)
-library(esquisse)
+library(formattable)
+library(kableExtra)
 ```
 
 ## Logframe
@@ -167,26 +134,27 @@ respiratory <- respiratory[-nrow(respiratory),] %>%
 ## Convert data
 
 ```{r}
-#' Calculate age
-#' 
-#' By default, calculates the typical "age in years", with a
-#' \code{floor} applied so that you are, e.g., 5 years old from
-#' 5th birthday through the day before your 6th birthday. Set
-#' \code{floor = FALSE} to return decimal ages, and change \code{units}
-#' for units other than years.
-#' @param dob date-of-birth, the day to start calculating age.
-#' @param age.day the date on which age is to be calculated.
-#' @param units unit to measure age in. Defaults to \code{"years"}. Passed to \link{\code{duration}}.
-#' @param floor boolean for whether or not to floor the result. Defaults to \code{TRUE}.
-#' @return Age in \code{units}. Will be an integer if \code{floor = TRUE}.
-#' @examples
-#' my.dob <- as.Date('1983-10-20')
-#' age(my.dob)
-#' age(my.dob, units = "minutes")
-#' age(my.dob, floor = FALSE)
+# Calculate age
+# 
+# By default, calculates the typical "age in years", with a
+# \code{floor} applied so that you are, e.g., 5 years old from
+# 5th birthday through the day before your 6th birthday. Set
+# \code{floor = FALSE} to return decimal ages, and change \code{units}
+# for units other than years.
+# @param dob date-of-birth, the day to start calculating age.
+# @param age.day the date on which age is to be calculated.
+# @param units unit to measure age in. Defaults to \code{"years"}. Passed to \link{\code{duration}}.
+# @param floor boolean for whether or not to floor the result. Defaults to \code{TRUE}.
+# @return Age in \code{units}. Will be an integer if \code{floor = TRUE}.
+# @examples
+# my.dob <- as.Date('1983-10-20')
+# age(my.dob)
+# age(my.dob, units = "minutes")
+# age(my.dob, floor = FALSE)
 # code by 'Gregor' 
 # https://stackoverflow.com/questions/27096485/change-a-column-from-birth-date-to-age-in-r
 # requires library 'lubridate'
+
 age <- function(dob, age.day = today(), units = "years", floor = TRUE) {
   calc.age = interval(dob, age.day) / duration(num = 1, units = units)
   if (floor) return(as.integer(floor(calc.age)))
@@ -220,95 +188,111 @@ population %>%
 
 ## Population overview
 
-Number of patients at each age group, and whether they have a recorded
-refugee or asylum seeker background or seen by Dr Buddini in the past
-two years.
+Number of patients at each age group, and recorded gender.
 
 ```{r}
-ggplot(population, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 25)
+ggplot(population, aes(x = Age, fill=Sex)) +
+  geom_histogram(binwidth = 5, boundary = 25) +
+  xlab("Age (years)") +
+  ggtitle("Patients with ")
 ```
 
 Total population : `r nrow(population)`
 
-### Power calculation
 
-Previous proportion of under-screened patients who were screened in the three months after March 2018 was 5.2%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
 
 ```{r}
-power_3month <- power.prop.test(n = nrow(population)/2,
-                                p1 = 0.05185,
-                                # the measured proportion with recorded cervical screen
-                                # under 'control' conditions
-                                power=0.8, sig.level=0.05,
-                                alternative = "two.sided")
+medcount_age10 <- as.data.frame.matrix(table(population$MedCount, population$AgeGroup10))
 
-power_3month
+Totals <- medcount_age10 %>%
+  mutate(Total = select(., `0`:`90`) %>% apply(1, sum, na.rm = TRUE)) %>%
+  pull(Total)
 
-paste("Minimum detectable effect : ", power_3month$p2 - power_3month$p1)
+medcount_age10 %>% 
+  mutate(MedCount = row.names(.)) %>%
+  mutate_if(is.numeric, function(x) {color_tile("#DeF7E9", "#71CA97")(x)}) %>%
+  select(MedCount, everything()) %>%
+  mutate(Total = Totals) %>%
+  kable("html", align = c("l", rep("r", 11)),
+        escape = F) %>%
+  kable_styling("hover", full_width = FALSE) %>%
+  column_spec(c(2,3,4,5,6,7,8, 9, 10, 11), width = "1.5cm", bold = TRUE) %>%
+  add_header_above(c(" ", "Age group (decade)" = 10, " "))
+```
+
+
+```{r}
+
+population <- population %>%
+  filter(Age >= 50 & Age <= 89) %>%
+  filter(MedCount >= 8)
+
+mc_refugeeorasylum <- as.data.frame.matrix(table(population$MedCount, population$RefugeeOrAsylum)) %>%
+  select(Refugee = `TRUE`)
+mc_analgesia <- as.data.frame.matrix(table(population$MedCount, population$analgesia)) %>%
+  select(Analgesia = `TRUE`)
+mc_BP <- as.data.frame.matrix(table(population$MedCount, population$BP)) %>%
+  select(BP = `TRUE`)
+mc_anticoagulant <- as.data.frame.matrix(table(population$MedCount, population$anticoagulant)) %>%
+  select(anticoagulant = `TRUE`)
+mc_antipsychoticmood <- as.data.frame.matrix(table(population$MedCount, population$antipsychoticmood)) %>%
+  select(antipsychotic = `TRUE`)
+mc_antidepressant <- as.data.frame.matrix(table(population$MedCount, population$antidepressant)) %>%
+  select(antidepressant = `TRUE`)
+mc_antianxiety <- as.data.frame.matrix(table(population$MedCount, population$antianxiety)) %>%
+  select(antianxiety = `TRUE`)
+mc_respiratory <- as.data.frame.matrix(table(population$MedCount, population$respiratory)) %>%
+  select(respiratory = `TRUE`)
+mc_conditions <- cbind(mc_refugeeorasylum, mc_analgesia, mc_BP,
+                       mc_anticoagulant, mc_antipsychoticmood, mc_antidepressant,
+                       mc_antianxiety, mc_respiratory)
+
+mc_conditions %>% 
+  mutate(MedCount = row.names(.)) %>%
+  mutate_if(is.numeric, function(x) {color_tile("#DeF7E9", "#71CA97")(x)}) %>%
+  select(MedCount, everything()) %>%
+  kable("html", align = c("l", rep("r", 8)),
+        escape = F) %>%
+  kable_styling("hover", full_width = FALSE) %>%
+  column_spec(c(2,3,4,5,6,7,8,9), width = "2cm", width_min = "1.5cm", bold = TRUE) %>%
+  add_header_above(c(" ", "Conditions" = 8))
 
 ```
 
-This is similar to estimated minimum detectable effect size using the equation:
-
-$EffectSize = (t_{1-\kappa}+t_\alpha)*\sqrt{\frac{1}{P(1-P)}}*\sqrt{\frac{\sigma^2}{N}}$
-
-where $t_{1-\kappa}$ is the power, $t_\alpha$ is the significance level, $P$ is the proportion in treatment, $\sigma^2$ is the variance and $N$ is the sample size.
-
-```{r}
-p1 <- 0.05185        # our previously observed proportion of women
-# who had cervical screening (CST) over three months
-p2 <- 0.1482171    # our 'guess' of what the 'treatment' group who had CST over
-# three months. this guess was actually informed by
-# above power calculation, however!
-p_avg <- (p1+p2)/2 # the average proportion of women who might
-# have cervical screening at the end of the study
-# variance of binomial is p(1-p)
-
-abs(qnorm(0.8)+qnorm(0.975))*sqrt(1/((0.5)*(1-0.5)))*sqrt((p_avg)*(1-p_avg)/302)
-```
-
-Previous proportion of under-screened patients who were screened in the six months after March 2018 was 8.9%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
-
-```{r}
-power.prop.test(n = nrow(population)/2,
-                p1 = 0.08889,
-                # the measured proportion with recorded cervical screen
-                # under 'control' conditions
-                power=0.8, sig.level=0.05,
-                alternative = "two.sided")
-```
 
 ## Choosing treatment and control groups
 
-Complete randomization within sub-groups defined by age (5 years groups),
-of known refugee or asylum seeker background, and whether seen by 
-Dr Buddini in the past twenty-five months.
 
 ```{r}
 set.seed(215936)
 # set random number seed
 # chosen by time on my watch at that particular second
 
-# balance across possible co-variants of age,
-# refugee/asylum seeker and whether seen by Dr Buddini in past two years
+# balance across possible co-variants of age (10),
+# refugee/asylum seeker, analgesia, BP, antidepressant
 
 # use 'createDataPartition' function from 'caret' library
 
-treatment <- NULL
-control <- NULL
+population <- population %>%
+  mutate(Subgroup = RefugeeOrAsylum + analgesia * 2 +
+           BP * 4 + antidepressant * 8)
 
-for (i in levels(population$AgeGroup5)) {
+phase1 <- NULL
+phase2 <- NULL
+
+for (i in sort(unique(population$AgeGroup10))) {
   coinflip <- runif(1)>.5
-  for (j in levels(population$Subgroup)) {
-    subsection <- population[population$AgeGroup5 == i & population$Subgroup == j,]
-    subsection$rank <- runif(nrow(subsection))
-    if ((nrow(subsection) %% 2) == 1)
-    {coinflip <- 1 - coinflip} # toggle from favouring treatment or control
-    new_control <- top_n(subsection, as.integer(nrow(subsection)/2 + coinflip*.5), rank)
-    new_treatment <- anti_join(subsection, new_control, by = "INTERNALID")
-    control <- rbind(control, new_control)
-    treatment <- rbind(treatment, new_treatment)
+  for (k in sort(unique(population$Subgroup))) {
+    subsection <- population[population$AgeGroup10 == i & population$Subgroup == k,]
+    if (nrow(subsection) > 0) {
+      subsection$rank <- runif(nrow(subsection))
+      if ((nrow(subsection) %% 2) == 1)
+      {coinflip <- 1 - coinflip} # toggle from favouring treatment or control
+      new_phase2 <- top_n(subsection, as.integer(nrow(subsection)/2 + coinflip*.5), rank)
+      new_phase1 <- anti_join(subsection, new_phase2, by = "ID")
+      phase2 <- rbind(phase2, new_phase2)
+      phase1 <- rbind(phase1, new_phase1)
+    }
   }
 }
 
