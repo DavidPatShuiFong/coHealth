@@ -220,34 +220,40 @@ medcount_age10 %>%
   add_header_above(c(" ", "Age group (decade)" = 10, " "))
 ```
 
+## Restrict ages and medication count
 
 ```{r}
 
 population <- population %>%
   filter(Age >= 50 & Age <= 89) %>%
   filter(MedCount >= 8)
+```
 
-mc_refugeeorasylum <- as.data.frame.matrix(table(population$MedCount, population$RefugeeOrAsylum)) %>%
-  select(Refugee = `TRUE`)
-mc_analgesia <- as.data.frame.matrix(table(population$MedCount, population$analgesia)) %>%
-  select(Analgesia = `TRUE`)
-mc_BP <- as.data.frame.matrix(table(population$MedCount, population$BP)) %>%
-  select(BP = `TRUE`)
-mc_anticoagulant <- as.data.frame.matrix(table(population$MedCount, population$anticoagulant)) %>%
-  select(anticoagulant = `TRUE`)
-mc_antipsychoticmood <- as.data.frame.matrix(table(population$MedCount, population$antipsychoticmood)) %>%
-  select(antipsychotic = `TRUE`)
-mc_antidepressant <- as.data.frame.matrix(table(population$MedCount, population$antidepressant)) %>%
-  select(antidepressant = `TRUE`)
-mc_antianxiety <- as.data.frame.matrix(table(population$MedCount, population$antianxiety)) %>%
-  select(antianxiety = `TRUE`)
-mc_respiratory <- as.data.frame.matrix(table(population$MedCount, population$respiratory)) %>%
-  select(respiratory = `TRUE`)
-mc_conditions <- cbind(mc_refugeeorasylum, mc_analgesia, mc_BP,
-                       mc_anticoagulant, mc_antipsychoticmood, mc_antidepressant,
-                       mc_antianxiety, mc_respiratory)
+```{r}
+medcount_conditions_crosstable <- function(population) {
+  mc_refugeeorasylum <- as.data.frame.matrix(table(population$MedCount, population$RefugeeOrAsylum)) %>%
+    select(Refugee = `TRUE`)
+  mc_analgesia <- as.data.frame.matrix(table(population$MedCount, population$analgesia)) %>%
+    select(Analgesia = `TRUE`)
+  mc_BP <- as.data.frame.matrix(table(population$MedCount, population$BP)) %>%
+    select(BP = `TRUE`)
+  mc_anticoagulant <- as.data.frame.matrix(table(population$MedCount, population$anticoagulant)) %>%
+    select(anticoagulant = `TRUE`)
+  mc_antipsychoticmood <- as.data.frame.matrix(table(population$MedCount, population$antipsychoticmood)) %>%
+    select(antipsychotic = `TRUE`)
+  mc_antidepressant <- as.data.frame.matrix(table(population$MedCount, population$antidepressant)) %>%
+    select(antidepressant = `TRUE`)
+  mc_antianxiety <- as.data.frame.matrix(table(population$MedCount, population$antianxiety)) %>%
+    select(antianxiety = `TRUE`)
+  mc_respiratory <- as.data.frame.matrix(table(population$MedCount, population$respiratory)) %>%
+    select(respiratory = `TRUE`)
+  mc_conditions <- cbind(mc_refugeeorasylum, mc_analgesia, mc_BP,
+                         mc_anticoagulant, mc_antipsychoticmood, mc_antidepressant,
+                         mc_antianxiety, mc_respiratory)
+  return(mc_conditions)
+}
 
-mc_conditions %>% 
+medcount_conditions_crosstable(population) %>% 
   mutate(MedCount = row.names(.)) %>%
   mutate_if(is.numeric, function(x) {color_tile("#DeF7E9", "#71CA97")(x)}) %>%
   select(MedCount, everything()) %>%
@@ -298,18 +304,18 @@ for (i in sort(unique(population$AgeGroup10))) {
 
 ```
 
-## Treatment ("Phase 1") group
+## "Phase 1" group
 
 ```{r}
-ggplot(treatment, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 24.95)
+ggplot(phase1, aes(x = Age, fill=Subgroup)) +
+  geom_histogram(binwidth = 10, boundary = 24.95)
 ```
 
-## Control ("Phase 2") group
+## "Phase 2" group
 
 ```{r}
-ggplot(control, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 24.95)
+ggplot(phase2, aes(x = Age, fill=Subgroup)) +
+  geom_histogram(binwidth = 10, boundary = 24.95)
 ```
 
 ## Further divison according to 'survey' team
