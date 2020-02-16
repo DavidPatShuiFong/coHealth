@@ -176,7 +176,8 @@ population <- population %>%
          DOB = as.Date(substr(DOBAge, 1, 10), format = "%d/%m/%Y")) %>% 
   mutate(Age = age(DOB, age.day = as.Date("2020/02/01"))) %>%
   # note that age is on 1st Feb 2020
-  mutate(AgeGroup10 = ((Age %/% 10)*10)) # 10-year age groups, labelled with minimum age
+  mutate(AgeGroup10 = ((Age %/% 10)*10),
+         AgeGroup5 = ((Age %/% 5)* 5)) # 5 and 10-year age groups, labelled with minimum age
 
 population %>%
   select(c(DOB, Age, Sex, RefugeeOrAsylum,
@@ -266,22 +267,58 @@ medcount_conditions_crosstable(population) %>%
 ```
 
 
-## Choosing treatment and control groups
+## Choosing Phase 1 and Phase 2 groups
 
 
 ```{r}
-set.seed(215936)
+set.seed(6291602)
 # set random number seed
 # chosen by time on my watch at that particular second
 
-# balance across possible co-variants of age (10),
-# refugee/asylum seeker, analgesia, BP, antidepressant
-
 # use 'createDataPartition' function from 'caret' library
 
+# paste which can ignore NA and empty strings
+#
+# Acts the same as regular paste, unless na.rm = TRUE,
+# in which case empty strings and NA are removed
+#
+# based on code by Moody_Mudskipper at
+# https://stackoverflow.com/questions/13673894/suppress-nas-in-paste
+# with additional code from
+# https://stackoverflow.com/questions/14270950/suppress-separator-in-paste-when-values-are-missing
+#
+# @param ... the list of strings to paste
+# @param sep the separator string, " " by default
+# @param collapse the collapse string, NULL by default
+# @param na.rm whether to remove NA and empty strings
+#
+# @return string
+paste2 <- function(..., sep = " ", collapse = NULL, na.rm = FALSE){
+  # in default case, use paste
+  if(!na.rm) return(paste(..., sep = sep, collapse = collapse))
+  # cbind is convenient to recycle, it warns though so use suppressWarnings
+  dots <- suppressWarnings(cbind(...))
+  res <- apply(dots, 1, function(...) {
+    x <- c(...)
+    x <- x[nchar(x) > 0] # get rid of empty strings
+    x <- x[length(x) > 0] # get rid of character(0)
+    if (all(is.na(x))) return(c(""))
+    do.call(paste, as.list(c(na.omit(x), sep = sep)))
+  })
+  if(is.null(collapse)) res else
+    paste(na.omit(res), collapse = collapse)
+}
+
+# balance across possible co-variants of gender, age (10),
+# refugee/asylum seeker, BP, antidepressant medication
+
 population <- population %>%
-  mutate(Subgroup = RefugeeOrAsylum + analgesia * 2 +
-           BP * 4 + antidepressant * 8)
+  mutate(Subgroup = paste2(Sex,
+                           if_else(RefugeeOrAsylum, "Refugee", as.character(NA)),
+                           if_else(BP, "BP", as.character(NA)),
+                           if_else(antidepressant, "Antidepressant", as.character(NA)),
+                           sep = ", ", na.rm = TRUE)) %>%
+  mutate(Subgroup = if_else(Subgroup == "", "None", Subgroup))
 
 phase1 <- NULL
 phase2 <- NULL
@@ -291,9 +328,10 @@ for (i in sort(unique(population$AgeGroup10))) {
   for (k in sort(unique(population$Subgroup))) {
     subsection <- population[population$AgeGroup10 == i & population$Subgroup == k,]
     if (nrow(subsection) > 0) {
+      # print(paste(k, ",", i, ":", nrow(subsection)))
       subsection$rank <- runif(nrow(subsection))
       if ((nrow(subsection) %% 2) == 1)
-      {coinflip <- 1 - coinflip} # toggle from favouring treatment or control
+      {coinflip <- 1 - coinflip} # toggle from favouring phase1 or phase2
       new_phase2 <- top_n(subsection, as.integer(nrow(subsection)/2 + coinflip*.5), rank)
       new_phase1 <- anti_join(subsection, new_phase2, by = "ID")
       phase2 <- rbind(phase2, new_phase2)
@@ -307,88 +345,17 @@ for (i in sort(unique(population$AgeGroup10))) {
 ## "Phase 1" group
 
 ```{r}
-ggplot(phase1, aes(x = Age, fill=Subgroup)) +
+ggplot(phase1, aes(x = AgeGroup10, fill = Subgroup)) +
   geom_histogram(binwidth = 10, boundary = 24.95)
 ```
 
 ## "Phase 2" group
 
 ```{r}
-ggplot(phase2, aes(x = Age, fill=Subgroup)) +
+ggplot(phase2, aes(x = AgeGroup10, fill = Subgroup)) +
   geom_histogram(binwidth = 10, boundary = 24.95)
 ```
 
-## Further divison according to 'survey' team
-
-Two surveyors planned. One of whom will be Dr Buddini.
-Divide each of treatment and survey groups into two sub-groups.
-
-```{r}
-set.seed(1603104944)
-
-treatment1 <- NULL
-treatment2 <- NULL
-
-for (i in levels(treatment$AgeGroup5)) {
-  coinflip <- runif(1)>.5
-  for (j in levels(treatment$Subgroup)) {
-    subsection <- treatment[treatment$AgeGroup5 == i & treatment$Subgroup == j,]
-    subsection$rank <- runif(nrow(subsection))
-    if ((nrow(subsection) %% 2) == 1)
-    {coinflip <- 1 - coinflip} # toggle from favouring one group or another
-    new_treatment1 <- top_n(subsection, as.integer(nrow(subsection)/2 + coinflip*.5), rank)
-    new_treatment2 <- anti_join(subsection, new_treatment1, by = "INTERNALID")
-    treatment1 <- rbind(treatment1, new_treatment1)
-    treatment2 <- rbind(treatment2, new_treatment2)
-  }
-}
-
-control1 <- NULL
-control2 <- NULL
-
-for (i in levels(control$AgeGroup5)) {
-  coinflip <- runif(1)>.5
-  for (j in levels(control$Subgroup)) {
-    subsection <- control[control$AgeGroup5 == i & control$Subgroup == j,]
-    subsection$rank <- runif(nrow(subsection))
-    if ((nrow(subsection) %% 2) == 1)
-    {coinflip <- 1 - coinflip} # toggle from favouring one group or another
-    new_control1 <- top_n(subsection, as.integer(nrow(subsection)/2 + coinflip*.5), rank)
-    new_control2 <- anti_join(subsection, new_control1, by = "INTERNALID")
-    control1 <- rbind(control1, new_control1)
-    control2 <- rbind(control2, new_control2)
-  }
-}
-
-```
-
-Treatment ("Phase 1") group 1
-
-```{r}
-ggplot(treatment1, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 24.95)
-```
-
-Treatment ("Phase 1") group 2
-
-```{r}
-ggplot(treatment2, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 24.95)
-```
-
-Control ("Phase 2") group 1
-
-```{r}
-ggplot(control1, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 24.95)
-```
-
-Control ("Phase 2") group 2
-
-```{r}
-ggplot(control2, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 24.95)
-```
 
 ## Export sub-groups to files for surveyor use.
 
@@ -400,311 +367,69 @@ surveyors.
 
 #### Variables added
 
-* *Surveyor* : person conducting telephone contact
-* *Ineligible* : reason (if appropriate) ineligible for Cervical Screening Test (CST) e.g. hysterectomy 
+* *Ineligible* : reason (if appropriate) ineligible for medication review 
 * *Interpreter needed* and *Interpreter used* : indicated in file that interpreter required? interpreter used?
-* *Previously seen by* : Person previously seen by surveyor?
 * *Phone Attempts* : Number of phone attempts
 * *Message left* : Was message left?
 * *Contact made* : was in-person contact made?
 * *Decline appointment - why* : reason appointment declined
-* *External result sought* : cervical screening test done elsewhere? sought?
 * *Accepted appointment* : Appointment made at coHealth Kensington for CST?
 * *Date of Appt* : Date of appointment made for CST
 * *Attended Appt* : Appointment attended?
-* *Screening Completed* : Cervical screening actually done at attended appointment?
-* *Result* : Result of cervical screening
+* *Result* : Result of appointment
+* *LMO Review* : Result of LMO review
+* *HMR Referral* : Referred for HMR?
 
 ```{r eval = FALSE}
 # set {r eval = FALSE when 'knitting' to form a HTML file}
 # as identifying data should not be in a public space!
 
-RecordingVariables <- matrix(c("Surveyor", "Ineligible - reason", "Interpreter needed", "Interpreter used",
-                               "Previously seen by", "Phone attempts", "Message left", "Contact made",
-                               "Declined appt - why", "External result sought",
+RecordingVariables <- matrix(c("Ineligible - reason", "Interpreter needed", "Interpreter used",
+                               "Phone attempts", "Message left", "Contact made",
+                               "Declined appt - why",
                                "Accepted appt", "Date of appt", "Attended appt",
-                               "Screening completed", "Result"), nrow = 1, byrow = FALSE)
+                               "Review completed", "Result", "LMO Review", "HMR Referral"),
+                             nrow = 1, byrow = FALSE)
 # list of recording variables to add to Excel sheets
 
-patient_details <- read.csv("20190401CSTpopulation_details.csv")
-# file with patient details
-patient_details <- patient_details %>%
-  select(c("INTERNALID", "SURNAME", "FIRSTNAME", "MIDDLENAME", "PREFERREDNAME", "TITLE", "DOB", "AGE", "RECORDNO"))
+patient_details <- population %>%
+  select(ID, Surname, FirstName, KnownAs, Sex, PhoneHW, PhoneM, Address, City, DOB, Age, 
+         MedCount, AgeGroup5, AgeGroup10)
 # select columns required for export
 
-treatment1_details <- treatment1 %>%
-  select(c("INTERNALID", "AgeGroup5")) %>% 
+phase1_details <- phase1 %>%
+  select(ID) %>% 
   # will store AgeGroup5 groups in separate sheets
-  left_join(patient_details, by = "INTERNALID")
+  left_join(patient_details, by = "ID")
 
-treatment2_details <- treatment2 %>%
-  select(c("INTERNALID", "AgeGroup5")) %>% 
-  # will store AgeGroup5 groups treatment in separate sheets
-  left_join(patient_details, by = "INTERNALID")
-
-control1_details <- control1 %>%
-  select(c("INTERNALID", "AgeGroup5")) %>% 
+phase2_details <- phase2 %>%
+  select(ID) %>% 
   # will store AgeGroup5 groups in separate sheets
-  left_join(patient_details, by = "INTERNALID")
+  left_join(patient_details, by = "ID")
 
-control2_details <- control2 %>%
-  select(c("INTERNALID", "AgeGroup5")) %>% 
-  # will store AgeGroup5 groups in separate sheets
-  left_join(patient_details, by = "INTERNALID")
+wb_phase1 <- createWorkbook() # create blank workbook
 
-wb_treat <- createWorkbook() # create blank workbook
-
-for (i in levels(treatment1_details$AgeGroup5)) {
-  subsection1 <- treatment1_details[treatment1_details$AgeGroup5 == i,]
-  sheetname1 <- paste("Phase 1 Group 1 - ", i)
-  addWorksheet(wb_treat, sheetname1)
-  writeData(wb_treat, sheetname1, subsection1)
-  writeData(wb_treat, sheetname1, RecordingVariables, startCol = 12, colNames = FALSE)
-  subsection2 <- treatment2_details[treatment2_details$AgeGroup5 == i,]
-  sheetname2 <- paste("Phase 1 Group 2 - ", i)
-  addWorksheet(wb_treat, sheetname2)
-  writeData(wb_treat, sheetname2, subsection2)
-  writeData(wb_treat, sheetname2, RecordingVariables, startCol = 12, colNames = FALSE)
+for (i in sort(unique(phase1_details$AgeGroup5))) {
+  subsection <- phase1_details[phase1_details$AgeGroup5 == i,]
+  sheetname <- paste("Phase 1 - ", i)
+  addWorksheet(wb_phase1, sheetname)
+  writeData(wb_phase1, sheetname, subsection %>% select(-c("AgeGroup5", "AgeGroup10")))
+  writeData(wb_phase1, sheetname, RecordingVariables, startCol = 13, colNames = FALSE)
 }
 
-saveWorkbook(wb_treat, file = "20190401CSTPhase1Groups.xlsx", overwrite = TRUE)
+saveWorkbook(wb_phase1, file = "202002PolypharmacyPhase1.xlsx", overwrite = TRUE)
 
-wb_control <- createWorkbook() # create blank workbook
+wb_phase2 <- createWorkbook() # create blank workbook
 
-for (i in levels(control1_details$AgeGroup5)) {
-  subsection1 <- control1_details[control1_details$AgeGroup5 == i,]
-  sheetname1 <- paste("Phase 2 Group 1 - ", i)
-  addWorksheet(wb_control, sheetname1)
-  writeData(wb_control, sheetname1, subsection1)
-  writeData(wb_control, sheetname1, RecordingVariables, startCol = 12, colNames = FALSE)
-  subsection2 <- control2_details[control2_details$AgeGroup5 == i,]
-  sheetname2 <- paste("Phase 2 Group 2 - ", i)
-  addWorksheet(wb_control, sheetname2)
-  writeData(wb_control, sheetname2, subsection2)
-  writeData(wb_control, sheetname2, RecordingVariables, startCol = 12, colNames = FALSE)
+for (i in sort(unique(phase2_details$AgeGroup5))) {
+  subsection <- phase2_details[phase2_details$AgeGroup5 == i,]
+  sheetname <- paste("Phase 2 - ", i)
+  addWorksheet(wb_phase2, sheetname)
+  writeData(wb_phase2, sheetname, subsection %>% select(-c("AgeGroup5", "AgeGroup10")))
+  writeData(wb_phase2, sheetname, RecordingVariables, startCol = 13, colNames = FALSE)
 }
 
-saveWorkbook(wb_control, file = "20190401CSTPhase2Groups.xlsx", overwrite = TRUE)
-
-
-```
-
-### SurveyCTO lists
-
-```{r eval = FALSE}
-# first row has three compulsory titles
-# 'id' - This is the unique ID that identifies each case
-#   use INTERNALID
-# 'label' - This is the label that will be used to identify each case when shown in Collect's user interface
-#   use INTERNALID + Initials + RECORDNO (unfortunately not all listed patients have a RECORDNO)
-# 'formids' - This is the comma-separated list of unique form ID's that are associated with a case
-#   this will be 'cervical_screening_questionnaire'
-
-surveycto_treatment <- rbind(treatment1_details, treatment2_details) %>%
-  select(c("INTERNALID", "FIRSTNAME", "SURNAME", "RECORDNO")) %>%
-  mutate(label = paste0(substring(FIRSTNAME, 1, 1), substring(SURNAME, 1, 1), " ",
-                        INTERNALID, " ", RECORDNO, " ")) %>%
-  mutate(formids = c("cervical_screening_questionnaire")) %>%
-  rename(id = INTERNALID) %>%
-  select(c("id", "label", "formids"))
-
-write.csv(surveycto_treatment, file = "20190401CSTsurveyCTO_Phase1.csv",
-          row.names = FALSE)
-
-surveycto_control <- rbind(control1_details, control2_details) %>%
-  select(c("INTERNALID", "FIRSTNAME", "SURNAME", "RECORDNO")) %>%
-  mutate(label = paste0(substring(FIRSTNAME, 1, 1), substring(SURNAME, 1, 1), " ",
-                        INTERNALID, " ", RECORDNO, " ")) %>%
-  mutate(formids = c("cervical_screening_questionnaire")) %>%
-  rename(id = INTERNALID) %>%
-  select(c("id", "label", "formids"))
-
-write.csv(surveycto_control, file = "20190401CSTsurveyCTO_Phase2.csv",
-          row.names = FALSE)
+saveWorkbook(wb_phase2, file = "202002PolypharmacyPhase2.xlsx", overwrite = TRUE)
 
 ```
 
-
-## SQL code
-
-### Finding patients eligible for the study
-
-Find eligible patients (female, age criteria), who are active patients (defined
-by three or more contacts in the past two years, including one *billed* visit in
-the past six months), who have not had cervical screening detected found in the
-PapSmear table or the Investigations table.
-
-Note that there is another table 'ObGyn' which should contain the most recent
-cervical screening result, but unfortunately, 'over-chose' 5 patients (found 295
-patients, instead of '290' as found using this search.)
-
-```{sql eval = FALSE}
-SELECT *
-
-FROM BPS_Patients
-WHERE StatusText = 'Active'
-AND Sex = 'Female'
-AND DOB BETWEEN  DateAdd(Year,-75,'20190401') AND DateAdd(Year,-25,'20190401')
-
-AND InternalID IN (SELECT InternalID
-FROM Visits v
-INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
-('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
-('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
-('%grace ho%'))
-AS ProviderName(Name)
-ON v.DrName LIKE ProviderName.Name
-
-WHERE VisitDate BETWEEN DateAdd(Month,-25,'20190401') AND '20190401'
-AND RecordStatus = 1
-
-GROUP BY internalid
-HAVING count(internalid) >= 3)
-
-AND InternalID IN (SELECT InternalID
-FROM Invoices WHERE InvoiceID IN (SELECT InvoiceID
-FROM Services
-WHERE Recordstatus = 1
-AND Servicedate > DateAdd(Month, -7, '20190401'))) 
-
-AND InternalID NOT IN (SELECT InternalID
-FROM PapSmears
-WHERE PapDate > DATEADD(Month, -45, '20190401')
--- CST not extremely overdue (>45 months old)
-)
-AND InternalID NOT IN (SELECT InternalID
-FROM Investigations
-WHERE (
-TestName LIKE '%CERVICAL SCREENING%'
-OR TestName LIKE '%PAP SMEAR%')
-AND ReportDate >  DATEADD(Month, -45, '20190401')
--- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
-)
-AND InternalID NOT IN (SELECT InternalID
-FROM ObsGynDetail
-WHERE NoPap=1
--- for some reason, Pap/CST marked as no longer required
-)
-
-ORDER BY surname, firstname
-
-```
-
-#### Additional code to detect if recorded history of refugee or asylum seeker status
-
-```{sql eval = FALSE}
-AND (
-InternalID IN
-(SELECT InternalID FROM PastHistory WHERE ItemCode = 13155 AND RecordStatus = 1)
-OR 
-InternalID IN 
-(SELECT InternalID FROM PastHistory WHERE ItemCode = 13154 AND RecordStatus = 1)
-)
-```
-
-#### Additional code to detect if contacted by a specific clinician (Dr Buddini).
-
-```{sql eval = FALSE}
-AND InternalID IN (SELECT InternalID
-FROM Visits v
-INNER JOIN (VALUES('%ekanayake%'))
-AS ProviderName(Name)
-ON v.DrName LIKE ProviderName.Name
-WHERE VisitDate BETWEEN DateAdd(Month,-25,'20190401') AND '20190401'
-AND RecordStatus = 1
-
-GROUP BY internalid
-HAVING count(internalid) >= 1)
-```
-
-### Finding historical cervical screening rates among the under-screened
-
-Below code finds 'active' patients (5 contacts in two years, include one
-contact within the previous six months) preceding 1st March 2018. Excludes
-patients who are marked for 'no cervical screening'.
-
-Note that the 'recent' visit definition is different to seeking patients
-eligible for the study, because no billing data is available prior to 
-June 2018.
-
-It then further restricts the patients to those who had a cervical
-screening test in the next three months.
-
-```{sql eval = FALSE}
-SELECT *
-
-FROM BPS_Patients
-WHERE StatusText = 'Active'
-AND Sex = 'Female'
-AND DOB BETWEEN  DateAdd(Year,-75,'20180301') AND DateAdd(Year,-25,'20180301')
-
-AND InternalID IN (SELECT InternalID
-FROM Visits v
-INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
-('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
-('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
-('%grace ho%'))
-AS ProviderName(Name)
-ON v.DrName LIKE ProviderName.Name
-
-WHERE VisitDate BETWEEN DateAdd(Year,-2,'20180301') AND '20180301'
-AND RecordStatus = 1
-
-GROUP BY internalid
-HAVING count(internalid) >= 3)
-
-AND InternalID IN (SELECT InternalID
-FROM Visits v
-INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
-('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
-('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
-('%grace ho%'))
-AS ProviderName(Name)
-ON v.DrName LIKE ProviderName.Name
-
-WHERE VisitDate BETWEEN DateAdd(Month,-6,'20180301') AND '20180301'
-AND RecordStatus = 1
-
-GROUP BY internalid
-HAVING count(internalid) >= 1)
-
-AND InternalID NOT IN (SELECT InternalID
-FROM PapSmears
-WHERE PapDate > DATEADD(Month, -45, '20180301')
-AND PapDate < '20180301'
--- CST not extremely overdue (>45 months old)
-)
-AND InternalID NOT IN (SELECT InternalID
-FROM Investigations
-WHERE (
-TestName LIKE '%CERVICAL SCREENING%'
-OR TestName LIKE '%PAP SMEAR%')
-AND ReportDate >  DATEADD(Month, -45, '20180301')
-AND ReportDate <  '20180301'
-
--- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
-)
-AND (InternalID IN (SELECT InternalID
-FROM PapSmears
-WHERE PapDate >= '20180301'
-AND PapDate < DATEADD(Month, 3, '20180301')
--- CST done in next three months
-)
-OR InternalID IN (SELECT InternalID
-FROM Investigations
-WHERE (
-TestName LIKE '%CERVICAL SCREENING%'
-OR TestName LIKE '%PAP SMEAR%')
-AND ReportDate >  '20180301'
-AND ReportDate <  DATEADD(Month, 3, '20180301')
-
--- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
-))
-AND InternalID NOT IN (SELECT InternalID
-FROM ObsGynDetail
-WHERE NoPap=1
--- for some reason, Pap/CST marked as no longer required
-)
-
-ORDER BY surname, firstname
-```
