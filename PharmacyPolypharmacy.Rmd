@@ -318,6 +318,9 @@ population <- population %>%
                            if_else(BP, "BP", as.character(NA)),
                            if_else(antidepressant, "Antidepressant", as.character(NA)),
                            sep = ", ", na.rm = TRUE)) %>%
+  mutate(SubgroupMed = paste(Subgroup, # stratification is done on 'SubgroupMed'
+                             # 'hi' or 'low' (relatively) medication count
+                             if_else(MedCount > 11, "H", "L"))) %>%
   mutate(Subgroup = if_else(Subgroup == "", "None", Subgroup))
 
 phase1 <- NULL
@@ -325,8 +328,8 @@ phase2 <- NULL
 
 for (i in sort(unique(population$AgeGroup10))) {
   coinflip <- runif(1)>.5
-  for (k in sort(unique(population$Subgroup))) {
-    subsection <- population[population$AgeGroup10 == i & population$Subgroup == k,]
+  for (k in sort(unique(population$SubgroupMed))) {
+    subsection <- population[population$AgeGroup10 == i & population$SubgroupMed == k,]
     if (nrow(subsection) > 0) {
       # print(paste(k, ",", i, ":", nrow(subsection)))
       subsection$rank <- runif(nrow(subsection))
@@ -349,10 +352,22 @@ ggplot(phase1, aes(x = AgeGroup10, fill = Subgroup)) +
   geom_histogram(binwidth = 10, boundary = 24.95)
 ```
 
+```{r}
+ggplot(phase1 %>% mutate(MedCount = as.character(MedCount)),
+       aes(x = AgeGroup10, fill = as.character(MedCount))) +
+  geom_histogram(binwidth = 10, boundary = 24.95)
+```
+
 ## "Phase 2" group
 
 ```{r}
 ggplot(phase2, aes(x = AgeGroup10, fill = Subgroup)) +
+  geom_histogram(binwidth = 10, boundary = 24.95)
+```
+
+```{r}
+ggplot(phase2 %>% mutate(MedCount = as.character(MedCount)),
+       aes(x = AgeGroup10, fill = as.character(MedCount))) +
   geom_histogram(binwidth = 10, boundary = 24.95)
 ```
 
