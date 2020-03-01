@@ -2,7 +2,12 @@
 title: "Polypharmacy"
 author: "Dr. David Fong"
 date: "6th February 2020"
-output: html_document
+output:
+  html_document
+bibliography: "My Library.bib"
+always_allow_html: yes
+link_citations: true
+csl: apa.csl
 ---
 
 ```{r setup, include=FALSE}
@@ -15,9 +20,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Extent of polypharmacy
 
 
-### Rate of polypharmacy in patients who are 
+### Rate of polypharmacy in patients
 
-SQL search code 
 
 ## Current strategies to combat polypharmacy
 
@@ -44,8 +48,24 @@ library(kableExtra)
 
 ## Variables to measure
 
-* **Age**
+* **Age** in ten year age groups (age 50 to 89 years)
+* **Sex**
 * **Refugee or asylum seeker** Possible proxy for less English literacy skills, or different health literacy.
+* **MedCount** Number of medications listed in record
+
+Initial medication groups used for stratification
+
+* **BP**
+* **antidepressant**
+
+## Potential outcome measures
+
+* **MedCount** Number of medications listed in record
+* Number of discharge summaries (reflecting hospital admissions)
+* Home Medication Reviews (HMR)
+* Overall billing
+* Overall billed visits
+* Blood pressure - on target?
 
 # Data and Code
 
