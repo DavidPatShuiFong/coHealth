@@ -1,0 +1,8 @@
+---
+title: "A Minimal Book Example"
+author: "David Fong"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+output: bookdown::gitbook
+documentclass: book
+---

@@ -2,14 +2,19 @@
 title: "Cervical Screening - telephone-based recall (2019)"
 author: "Dr. Buddini Ekanayake & Dr. David Fong"
 date: "21st November 2019"
+site: bookdown::bookdown_site
 output:
  bookdown::gitbook:
   css: "css/mystyle.css" # allows 'wide 1200px' page display
+  sharing:
+     weibo: yes
 documentclass: book
+rmd_files: ["CervicalScreeningTelephone.Rmd"]
 bibliography: "My Library.bib"
+csl: apa.csl
 ---
 
-```{r prelim_setup, include=FALSE}
+```{r preliminaries, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -807,7 +812,7 @@ ORDER BY surname, firstname
 
 # Appendix B - R Code to read data, generate subgroups and analyze data
 
-## Setup
+## Libraries
 
 ```{r allcode, ref.label = c("setup"), echo = TRUE, eval = FALSE}
 ```
