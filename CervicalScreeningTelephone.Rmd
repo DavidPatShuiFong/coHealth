@@ -6,6 +6,7 @@ output:
  bookdown::gitbook:
   css: "css/mystyle.css" # allows 'wide 1200px' page display
 documentclass: book
+bibliography: "My Library.bib"
 ---
 
 ```{r prelim_setup, include=FALSE}
@@ -16,9 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Cervical screening benefits
 
-Regular cervical cancer screening reduces the risk of cancer incidence by approximately a factor of 3 to 4 compared to no screening (for women aged 35 to 79 years), and reduces mortality by a factor of 4 to 10. Regular cervical cancer screening reduces the risk of cervical cancer incidence and death by up to a factor of two compared to irregular cervical cancer screening[^1].
-
-[^1]:“Impact of cervical screening on cervical cancer mortality: estimation using stage-specific results from a nested case-control study” Landy, Pesola, Castanon and Sasieni. British Journal of Cancer (2016) **115**, 1140-1146
+Regular cervical cancer screening reduces the risk of cancer incidence by approximately a factor of 3 to 4 compared to no screening (for women aged 35 to 79 years), and reduces mortality by a factor of 4 to 10. Regular cervical cancer screening reduces the risk of cervical cancer incidence and death by up to a factor of two compared to irregular cervical cancer screening [@landy2016bjc].
 
 ## Extent of under-screening
 
@@ -82,7 +81,7 @@ library(huxtable)
 ```
 
 
-## Theory of Change graph
+## Theory of Change
 
 ```{r theory-of-change, echo = FALSE}
 dag <- downloadGraph("dagitty.net/mannE14")
@@ -95,11 +94,13 @@ dag <- downloadGraph("dagitty.net/mannE14")
 plot(dag)
 ```
 
-![](cervicalscreeningtelephone.svg)
+```{r toc, fig.show='hold', fig.align = 'center', fig.cap = "Theory of Change", echo = FALSE}
+knitr::include_graphics("cervicalscreeningtelephone.svg")
+```
 
 ## Logical framework
 
------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
 Objectives    Indicator              Verification         Assumptions/Threats
 Hierarchy
 ------------  ---------------------- ----------------     ------------------------------
@@ -177,6 +178,8 @@ cervical
 cancer
 
 --------------------------------------------------------------------------------------
+
+Table: (\#tab:logical-framework) Cervical screening telephone-based recall
 
 
 ## Variables to measure
@@ -266,7 +269,7 @@ Number of patients at each age group, and whether they have a recorded
 refugee or asylum seeker background or seen by Dr Buddini in the past
 two years.
 
-```{r overview, echo = FALSE, message = FALSE}
+```{r overview, fig.show='hold', fig.align = 'center', fig.cap = "Population overview", echo = FALSE, message = FALSE}
 ggplot(population, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 25)
 ```
@@ -287,7 +290,7 @@ power_3month <- power.prop.test(n = nrow(population)/2,
 
 power_3month
 
-paste("Minimum detectable effect : ", power_3month$p2 - power_3month$p1)
+paste("Minimum detectable effect : ", round(power_3month$p2 - power_3month$p1, 4))
 
 ```
 
@@ -434,7 +437,7 @@ saveWorkbook(wb_control, file = "20190301CSTPhase2Groups.xlsx", overwrite = TRUE
 
 # Results
 
-Telephone-based recall for cervical screening commenced 1st April 2019. The results shown in the table below are interim results as of 14th November 2019. ‘n’ represents the number of patients in each sub-group. ‘CST done’ indicates that, as of 14th November 2019, a cervical screening test had been recorded within the previous two years. ‘CST overdue’ indicates that no cervical screening had been recorded during the previous two years.
+Telephone-based recall for cervical screening commenced 1st April 2019. Table \@ref(tab:results-table) shows interim results as of 14th November 2019. ‘n’ represents the number of patients in each sub-group. ‘CST done’ indicates that, as of 14th November 2019, a cervical screening test had been recorded within the previous two years. ‘CST overdue’ indicates that no cervical screening had been recorded during the previous two years.
 
 ‘Refugee’ is the subset of patients who have a recorded entry of ‘refugee’ or ‘asylum-seeker’ in the patient file. ‘Other’ is the remainder, who have no recorded entry of ‘refugee’ or ‘asylum-seeker’ in the patient file.
 
@@ -551,7 +554,9 @@ df_tab %>%
          CSTtrueProp= color_tile("#DeF7E9", "#71CA97")(percent(CSTtrueProp, 1))) %>%
   dplyr::select(Group, everything()) %>%
   kable("html", escape = F,
-        col.names = c(" ", "n", "%", "n", "%"))  %>%
+        col.names = c(" ", "n", "%", "n", "%"),
+        booktabs = TRUE,
+        caption = 'Cervical screening recall results')  %>%
   kable_styling("striped", full_width = F) %>%
   column_spec(1, width = "10em") %>%
   row_spec(0, align = "c") %>%
@@ -579,16 +584,16 @@ rates for patients who are overdue for cervical screening.
 The table above suggests that, although patients with a background of refugee/asylumseeker status have a very low rate of cervical screening compared to non-refugee patients (‘Refugee Phase 2’ vs. ‘Other’ Phase 2), the rate of cervical screening is similar if
 telephone-based recall for cervical screening is done (‘Refugee Phase 1’ vs. ‘Other’ Phase 1).
 
-This is also shown visually in the ‘interaction plot’ below.
+This is shown visually in the interaction plot Figure \@ref(fig:results-interaction).
 
-```{r results-interaction, echo = FALSE, message = FALSE, warning=FALSE}
+```{r results-interaction, fig.show='hold', fig.align = 'center', fig.cap = "Recall + Refugee/Asylum-seeker interaction", echo = FALSE, message = FALSE, warning=FALSE}
 interaction.plot(df$Phase, df$refugee, df$CST,
                  trace.label = "Refugee",
                  xlab = "Telephone recall",
                  ylab = "Cervical Screening up-to-date (proportion)")
 ```
 
-The regression table below compares a logistic regression model which includes a
+Table \@ref(tab:aic) compares a logistic regression model which includes a
 background of refugee/asylum-seeker status and interaction effects with telephone-based
 recall (‘PhaseTRUE’ in the regression table below) with a simpler logistic regression model
 (‘Simple model’) which just includes telephone-based recall as the predictor.
@@ -598,7 +603,9 @@ model1 <- glm(CST ~ refugee * Phase, family = binomial(link = "logit"), data = d
 model2 <- stepAIC(model1, trace = FALSE)
 # the 'best' model, combining explanatory power and simplicity, accord ing to the
 # stepwise Akaiki Information Criterion (AIC) selection
-huxreg("Refugee model" = model1, "Simple model" = model2)
+huxreg("Refugee model" = model1, "Simple model" = model2) %>%
+  huxtable::set_caption("Refugee/Asylum-seeker status as a predictor of response to telephone-based recall") %>%
+  huxtable::set_label("tab:aic")
 ```
 
 The ‘refugee model’ is not superior to the ‘simple model’ according to step-wise model
@@ -607,6 +614,12 @@ selection by Akaike Information Criterion (AIC). Step-wise model selection by AI
 The ‘simple model’, with just the telephone-based recall intervention (‘Phase’, indicating
 ‘Phase 1’), shows that there is a significant increase in cervical screening (\(p = 0.027\))
 when telephone-based recall was used.
+
+# References
+
+<div id = "refs"></div>
+
+# (APPENDIX) Appendix {-}
 
 # Appendix A - SQL code
 
