@@ -1,7 +1,7 @@
 ---
 title: "Cervical Screening 2019"
 author: "Dr. Buddini Ekanayake & Dr. David Fong"
-date: "31st March 2019"
+date: "16th March 2019"
 output: html_document
 ---
 
@@ -21,7 +21,7 @@ According to Practice Incentive program data (May 2018), 61.14% of eligible pati
 
 Using SQL searches in the Best Practice database, as of 1st March 2019 there were 857 eligible patients who were active in seeing the clinic. Of those, 290 patients (34%) had either no recording of a cervical screening, or no cervical screening recording for the previous forty-five months. At the time of writing, cervical screening done forty-five (45) or more months previously would be the 'Pap' smear, which needs to be repeated in twenty-four (24) months.
 
-Note : For the purpose of this document, 'eligible' patients are females aged between 25 and 75 years, who are not otherwise marked as not requiring future cervical screening. 'Active' patients refers to patients who have had three or more contacts with the clinic in the previous twenty-five months, including at least once in the previous seven months. If the information is available (as it was in March 2019, but not in preceding years), the 'previous seven months' contact is a 'billed visit'.
+Note : For the purpose of this document, 'eligible' patients are females aged between 25 and 75 years, who are not otherwise marked as not requiring future cervical screening. 'Active' patients refers to patients who have had three or more contacts with the clinic in the previous two years, including at least once in the previous six months. If the information is available (as it was in March 2019, but not in preceding years), the 'previous six months' contact is a 'billed visit'.
 
 ### Rate of cervical screening in patients who are underscreened
 
@@ -33,13 +33,15 @@ In the next three months after that, an additional ten patients (3.7%) had a rec
 
 SQL search code used to count historical screening found at the end of this document. Note that no billing information is available prior to June 2018, so the definition of an 'active' patient is slightly different.
 
-## Current strategies to promote cervical screening.
+## Usual strategies to promote cervical screening.
 
 During visits for other purposes in a primary care clinic, patients are, where possible, recommended to have cervical screening. This can be aided by automated 'real-time' tools such as Doctor's Control Panel, and the availability of a womens' health nurse who is available to do cervical screening.
 
 In addition, the clinic runs a reminder system which invites patients to repeat the cervical screening when the next screening is due. This is done with a letter, in English. The government also uses letters to remind people when the next cervical screening is due. Until very recenty, the 'reminder' interval has been two years, as cervical screening was done with the 'Pap' test until 2018.
 
 ## Cervical screening outcome payment
+
+Not available from latter half of 2019.
 
 Current eligible practice population : 754 (according to May 2018 PIP data)
 
@@ -64,10 +66,14 @@ Additional revenue if Cervical Outcome Payment achieved
 * If the invitation is accepted, an appointment is made for cervical screening.
 
 ```{r message = FALSE, results = 'hide', warning = FALSE}
+library(MASS) # has its own 'select' function!
 library(tidyverse)
 library(dagitty)
 library(lubridate)
 library(openxlsx)
+library(formattable)
+library(kableExtra)
+library(huxtable)
 ```
 
 
@@ -90,69 +96,83 @@ plot(dag)
 ## Logframe
 
 -----------------------------------------------------------------------------------
-Objectives  Indicator              Verification         Assumptions/Threats
+Objectives    Indicator              Verification         Assumptions/Threats
 Hierarchy
-----------  ---------------------- ----------------     ---------------------------
-Inputs      Telephone invitation   Call log             Telephone answered
+------------  ---------------------- ----------------     ------------------------------
+(Input)       Telephone invitation   Call log             Telephone answered
+Invitation
+to cervical                                               
+screening by                                                   
+telephone        
 
-                                                        Common language used
-                                                   
-                                                        Social desirability bias?
-                                                        e.g. type of practitioner
-                                                        ringing, or previous contact
-                                                        with practitioner who rings
+                                                          Common language used
+
+                                                          Social desirability bias?
+                                                          e.g. type of practitioner
+                                                          ringing, or previous contact
+                                                          with practitioner who rings
                                                     
-                                                        Diqualifying criteria
-                                                        for cervical screening
-                                                        e.g. hysterectomy
+                                                          Diqualifying criteria
+                                                          for cervical screening
+                                                          e.g. hysterectomy
                                                  
-            Letter invitation      Previous letter      Letter read
-                                   in file                                            
-                                           
-                                                        English literacy
+(Input)       Letter invitations     Previous letter      Letter read
+Invitation                           in file                                            
+to cervical
+screening by
+mail
+
+                                                          English literacy
                                                         
-                                                        Letter persuasive
+                                                          Letter persuasive
                                                  
-Outputs     Appointments made      Appointment log      Appropriate cervical
-                                                        screening already
-                                                        done elsewhere
-                                                        
-                                                        Disqualifying criteria
-                                                        for cervical screening
-                                                        e.g. hysterectomy
+(Output)      Appointments made      Appointment log      Appropriate cervical
+Appointment                                               screening already
+for cervical                                              done elsewhere
+screening
 
-            Appointments attended  Appointment book     Appointment is remembered
+                                                          Disqualifying criteria
+                                                          for cervical screening
+                                                          e.g. hysterectomy
+
+              Appointments attended  Appointment book     Appointment is remembered
          
-            Cervical screening     Cervical             Some cervical screening will
-            (CST) at clinic        screening            be the result of the telephone
-                                   results (can         invitation, others might
-                                   be searched          screen for other reasons.
-                                   using clinical
-                                   database).
+              Cervical screening     Cervical             Some cervical screening will
+              (CST) at clinic        screening            be the result of the telephone
+                                     results (can         invitation, others might
+                                     be searched          screen for other reasons.
+                                     using clinical
+                                     database).
          
-            Cervical screening
-            (CST) done elsewhere
+                                                          Cervical screening
+                                                          (CST) might be
+                                                          done elsewhere
 
-Outcome     Improved cervical      Government
-            screening coverage     Practice Incentive
-                                   Program reports
-                                   (PIP statements)
-                                
-Impact      Reduced cervical       HPV detected         Vulnerable population
-            cancer rates                                screened
+(Outcome)     Improved cervical      Government
+Improved      screening coverage     Practice Incentive
+cervical                             Program reports
+screening
+coverage                            
 
-                                   pLSIL/LSIL detected
-                                   (Low-grade squamous
-                                   intraepithelial
-                                   lesion, possible
-                                   or confirmed)
+              Increase detection     Patient record
+              of HPV or cervical     audit of HPV/
+              changes                pLSIL/LSIL detected
+                                     (Low-grade squamous
+                                     intraepithelial
+                                     lesion, possible
+                                     or confirmed) 
                                    
-                                   HSIL detected
-                                   (High-grade squamous
-                                   intraepithelial
-                                   lesion)
+                                     HSIL detected
+                                     (High-grade squamous
+                                     intraepithelial
+                                     lesion)
 
------------------------------------------------------------------------------------
+(Impact)      Reduced cervical       Difficult!           Vulnerable population
+Reduce        cancer rates                                screened
+cervical
+cancer
+
+--------------------------------------------------------------------------------------
 
 ## Variables to measure
 
@@ -173,35 +193,35 @@ Impact      Reduced cervical       HPV detected         Vulnerable population
 * **Cervical screening changes requiring review or referral**
 * **Referral to gynaecologist as result of cervical screening**
 
-# Data and Code
+# Code and processing
 
 ## Read Data
 
 ```{r}
-population <- as_tibble(read.csv("20190401CSTpopulation.csv"))
-seen_Buddini <- as_tibble(read.csv("20190401CSTBuddini.csv"))
-refugeeasylum <- as_tibble(read.csv("20190401CSTRefugeeAsylum.csv"))
+population <- as_tibble(read.csv("20190301CSTpopulation.csv"))
+seen_Buddini <- as_tibble(read.csv("20190301CSTBuddini.csv"))
+refugeeasylum <- as_tibble(read.csv("20190301CSTRefugeeAsylum.csv"))
 ```
 
 ## Convert data
 ```{r}
-#' Calculate age
-#' 
-#' By default, calculates the typical "age in years", with a
-#' \code{floor} applied so that you are, e.g., 5 years old from
-#' 5th birthday through the day before your 6th birthday. Set
-#' \code{floor = FALSE} to return decimal ages, and change \code{units}
-#' for units other than years.
-#' @param dob date-of-birth, the day to start calculating age.
-#' @param age.day the date on which age is to be calculated.
-#' @param units unit to measure age in. Defaults to \code{"years"}. Passed to \link{\code{duration}}.
-#' @param floor boolean for whether or not to floor the result. Defaults to \code{TRUE}.
-#' @return Age in \code{units}. Will be an integer if \code{floor = TRUE}.
-#' @examples
-#' my.dob <- as.Date('1983-10-20')
-#' age(my.dob)
-#' age(my.dob, units = "minutes")
-#' age(my.dob, floor = FALSE)
+# Calculate age
+# 
+# By default, calculates the typical "age in years", with a
+# \code{floor} applied so that you are, e.g., 5 years old from
+# 5th birthday through the day before your 6th birthday. Set
+# \code{floor = FALSE} to return decimal ages, and change \code{units}
+# for units other than years.
+# @param dob date-of-birth, the day to start calculating age.
+# @param age.day the date on which age is to be calculated.
+# @param units unit to measure age in. Defaults to \code{"years"}. Passed to \link{\code{duration}}.
+# @param floor boolean for whether or not to floor the result. Defaults to \code{TRUE}.
+# @return Age in \code{units}. Will be an integer if \code{floor = TRUE}.
+# @examples
+# my.dob <- as.Date('1983-10-20')
+# age(my.dob)
+# age(my.dob, units = "minutes")
+# age(my.dob, floor = FALSE)
 # code by 'Gregor' 
 # https://stackoverflow.com/questions/27096485/change-a-column-from-birth-date-to-age-in-r
 # requires library 'lubridate'
@@ -225,14 +245,14 @@ population <- population %>%
   )) %>%
   mutate(Subgroup = as.factor(Subgroup)) %>%
   mutate(DOB = dmy(DOB)) %>% # change into standard R date
-  mutate(Age = age(DOB, age.day = as.Date("2019/04/01"))) %>%
+  mutate(Age = age(DOB, age.day = as.Date("2019/03/01"))) %>%
   # note that age is on 1st March 2019
   mutate(AgeGroup5 = as.factor((Age %/% 5)*5)) # 5-year age groups, labelled with minimum age
 
 
 population %>%
-  select(c("DOB", "Age", "SeenBuddini", "RefugeeOrAsylum",
-           "Subgroup", "AgeGroup5")) %>%
+  dplyr::select("DOB", "Age", "SeenBuddini", "RefugeeOrAsylum",
+           "Subgroup", "AgeGroup5") %>%
   summary()
 
 ```
@@ -277,14 +297,14 @@ where $t_{1-\kappa}$ is the power, $t_\alpha$ is the significance level, $P$ is 
 ```{r}
 p1 <- 0.05185        # our previously observed proportion of women
                    # who had cervical screening (CST) over three months
-p2 <- 0.1482171    # our 'guess' of what the 'treatment' group who had CST over
+p2 <- 0.1507374    # our 'guess' of what the 'treatment' group who had CST over
                    # three months. this guess was actually informed by
                    # above power calculation, however!
 p_avg <- (p1+p2)/2 # the average proportion of women who might
                    # have cervical screening at the end of the study
                    # variance of binomial is p(1-p)
 
-abs(qnorm(0.8)+qnorm(0.975))*sqrt(1/((0.5)*(1-0.5)))*sqrt((p_avg)*(1-p_avg)/302)
+abs(qnorm(0.8)+qnorm(0.975))*sqrt(1/((0.5)*(1-0.5)))*sqrt((p_avg)*(1-p_avg)/290)
 ```
 
 Previous proportion of under-screened patients who were screened in the six months after March 2018 was 8.9%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
@@ -302,7 +322,7 @@ power.prop.test(n = nrow(population)/2,
 
 Complete randomization within sub-groups defined by age (5 years groups),
 of known refugee or asylum seeker background, and whether seen by 
-Dr Buddini in the past twenty-five months.
+Dr Buddini in the past two years.
 
 ```{r}
 set.seed(215936)
@@ -333,14 +353,14 @@ for (i in levels(population$AgeGroup5)) {
 
 ```
 
-## Treatment ("Phase 1") group
+## Treatment group
 
 ```{r}
 ggplot(treatment, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-## Control ("Phase 2") group
+## Control group
 
 ```{r}
 ggplot(control, aes(x = Age, fill=Subgroup)) +
@@ -391,71 +411,45 @@ for (i in levels(control$AgeGroup5)) {
 
 ```
 
-Treatment ("Phase 1") group 1
+Treatment group 1
 
 ```{r}
 ggplot(treatment1, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-Treatment ("Phase 1") group 2
+Treatment group 2
 
 ```{r}
 ggplot(treatment2, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-Control ("Phase 2") group 1
+Control group 1
 
 ```{r}
 ggplot(control1, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-Control ("Phase 2") group 2
+Control group 2
 
 ```{r}
 ggplot(control2, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-## Export sub-groups to files for surveyor use.
-
-### Excel file
+## Export sub-groups to Excel file for surveyor use.
 
 Re-attach patient names and demographic details to
 sub-groups, and export to Excel file (Phase 1 = Treat, Phase 2 = Control) for use by
 surveyors.
 
-#### Variables added
-
-* *Surveyor* : person conducting telephone contact
-* *Ineligible* : reason (if appropriate) ineligible for Cervical Screening Test (CST) e.g. hysterectomy 
-* *Interpreter needed* and *Interpreter used* : indicated in file that interpreter required? interpreter used?
-* *Previously seen by* : Person previously seen by surveyor?
-* *Phone Attempts* : Number of phone attempts
-* *Message left* : Was message left?
-* *Contact made* : was in-person contact made?
-* *Decline appointment - why* : reason appointment declined
-* *External result sought* : cervical screening test done elsewhere? sought?
-* *Accepted appointment* : Appointment made at coHealth Kensington for CST?
-* *Date of Appt* : Date of appointment made for CST
-* *Attended Appt* : Appointment attended?
-* *Screening Completed* : Cervical screening actually done at attended appointment?
-* *Result* : Result of cervical screening
-
 ```{r eval = FALSE}
 # set {r eval = FALSE when 'knitting' to form a HTML file}
 # as identifying data should not be in a public space!
 
-RecordingVariables <- matrix(c("Surveyor", "Ineligible - reason", "Interpreter needed", "Interpreter used",
-                               "Previously seen by", "Phone attempts", "Message left", "Contact made",
-                               "Declined appt - why", "External result sought",
-                               "Accepted appt", "Date of appt", "Attended appt",
-                               "Screening completed", "Result"), nrow = 1, byrow = FALSE)
-# list of recording variables to add to Excel sheets
-
-patient_details <- read.csv("20190401CSTpopulation_details.csv")
+patient_details <- read.csv("20190301CSTpopulation_details.csv")
 # file with patient details
 patient_details <- patient_details %>%
   select(c("INTERNALID", "SURNAME", "FIRSTNAME", "MIDDLENAME", "PREFERREDNAME", "TITLE", "DOB", "AGE", "RECORDNO"))
@@ -488,15 +482,13 @@ for (i in levels(treatment1_details$AgeGroup5)) {
   sheetname1 <- paste("Phase 1 Group 1 - ", i)
   addWorksheet(wb_treat, sheetname1)
   writeData(wb_treat, sheetname1, subsection1)
-  writeData(wb_treat, sheetname1, RecordingVariables, startCol = 12, colNames = FALSE)
   subsection2 <- treatment2_details[treatment2_details$AgeGroup5 == i,]
   sheetname2 <- paste("Phase 1 Group 2 - ", i)
   addWorksheet(wb_treat, sheetname2)
   writeData(wb_treat, sheetname2, subsection2)
-  writeData(wb_treat, sheetname2, RecordingVariables, startCol = 12, colNames = FALSE)
 }
 
-saveWorkbook(wb_treat, file = "20190401CSTPhase1Groups.xlsx", overwrite = TRUE)
+saveWorkbook(wb_treat, file = "20190301CSTPhase1Groups.xlsx", overwrite = TRUE)
 
 wb_control <- createWorkbook() # create blank workbook
 
@@ -505,53 +497,193 @@ for (i in levels(control1_details$AgeGroup5)) {
   sheetname1 <- paste("Phase 2 Group 1 - ", i)
   addWorksheet(wb_control, sheetname1)
   writeData(wb_control, sheetname1, subsection1)
-  writeData(wb_control, sheetname1, RecordingVariables, startCol = 12, colNames = FALSE)
   subsection2 <- control2_details[control2_details$AgeGroup5 == i,]
   sheetname2 <- paste("Phase 2 Group 2 - ", i)
   addWorksheet(wb_control, sheetname2)
   writeData(wb_control, sheetname2, subsection2)
-  writeData(wb_control, sheetname2, RecordingVariables, startCol = 12, colNames = FALSE)
 }
 
-saveWorkbook(wb_control, file = "20190401CSTPhase2Groups.xlsx", overwrite = TRUE)
+saveWorkbook(wb_control, file = "20190301CSTPhase2Groups.xlsx", overwrite = TRUE)
 
 
 ```
 
-### SurveyCTO lists
+## Results
 
-```{r eval = FALSE}
-# first row has three compulsory titles
-# 'id' - This is the unique ID that identifies each case
-#   use INTERNALID
-# 'label' - This is the label that will be used to identify each case when shown in Collect's user interface
-#   use INTERNALID + Initials + RECORDNO (unfortunately not all listed patients have a RECORDNO)
-# 'formids' - This is the comma-separated list of unique form ID's that are associated with a case
-#   this will be 'cervical_screening_questionnaire'
+Telephone-based recall for cervical screening commenced 1st April 2019. The results shown in the table below are interim results as of 14th November 2019. ‘n’ represents the number of patients in each sub-group. ‘CST done’ indicates that, as of 14th November 2019, a cervical screening test had been recorded within the previous two years. ‘CST overdue’ indicates that no cervical screening had been recorded during the previous two years.
 
-surveycto_treatment <- rbind(treatment1_details, treatment2_details) %>%
-  select(c("INTERNALID", "FIRSTNAME", "SURNAME", "RECORDNO")) %>%
-  mutate(label = paste0(substring(FIRSTNAME, 1, 1), substring(SURNAME, 1, 1), " ",
-                        INTERNALID, " ", RECORDNO, " ")) %>%
-  mutate(formids = c("cervical_screening_questionnaire")) %>%
-  rename(id = INTERNALID) %>%
-  select(c("id", "label", "formids"))
+‘Refugee’ is the subset of patients who have a recorded entry of ‘refugee’ or ‘asylum-seeker’ in the patient file. ‘Other’ is the remainder, who have no recorded entry of ‘refugee’ or ‘asylum-seeker’ in the patient file.
 
-write.csv(surveycto_treatment, file = "20190401CSTsurveyCTO_Phase1.csv",
-          row.names = FALSE)
+```{r}
+# reads results and processes
 
-surveycto_control <- rbind(control1_details, control2_details) %>%
-  select(c("INTERNALID", "FIRSTNAME", "SURNAME", "RECORDNO")) %>%
-  mutate(label = paste0(substring(FIRSTNAME, 1, 1), substring(SURNAME, 1, 1), " ",
-                        INTERNALID, " ", RECORDNO, " ")) %>%
-  mutate(formids = c("cervical_screening_questionnaire")) %>%
-  rename(id = INTERNALID) %>%
-  select(c("id", "label", "formids"))
+xl1_name <- '20190401CSTPhase1Groups_results_20191114.xlsx' # results held in these XLSX spreadsheets
+xl2_name <- '20190401CSTPhase2Groups_results_20191114.xlsx'
 
-write.csv(surveycto_control, file = "20190401CSTsurveyCTO_Phase2.csv",
-          row.names = FALSE)
+sheet_names <- getSheetNames(xl1_name) # not actually used
+
+# the phase 1 groups who have been contacted as of 14th November 2019
+id1_1_25 <- read.xlsx(xl1_name, sheet = "Phase 1 Group 1 -  25") %>%
+  pull(INTERNALID)
+id1_2_25 <- read.xlsx(xl1_name, sheet = "Phase 1 Group 2 -  25") %>%
+  pull(INTERNALID)
+id1_2_30 <- read.xlsx(xl1_name, sheet = "Phase 1 Group 2 -  30") %>%
+  pull(INTERNALID)
+id1_2_35 <- read.xlsx(xl1_name, sheet = "Phase 1 Group 2 -  35") %>%
+  pull(INTERNALID)
+
+id1b <- c(id1_2_25, id1_2_30, id1_2_35) # 'phase1' group contact by BE
+id1 <- c(id1_1_25, id1b) # total phase 1 group contacted
+
+# the comparison phase 2 groups (aged 25-40), not contacted by telephone
+id2_1_25 <- read.xlsx(xl2_name, sheet = "Phase 2 Group 1 -  25") %>%
+  pull(INTERNALID)
+id2_1_30 <- read.xlsx(xl2_name, sheet = "Phase 2 Group 1 -  30") %>%
+  pull(INTERNALID)
+id2_1_35 <- read.xlsx(xl2_name, sheet = "Phase 2 Group 1 -  35") %>%
+  pull(INTERNALID)
+id2_2_25 <- read.xlsx(xl2_name, sheet = "Phase 2 Group 2 -  25") %>%
+  pull(INTERNALID)
+id2_2_30 <- read.xlsx(xl2_name, sheet = "Phase 2 Group 2 -  30") %>%
+  pull(INTERNALID)
+id2_2_35 <- read.xlsx(xl2_name, sheet = "Phase 2 Group 2 -  35") %>%
+  pull(INTERNALID)
+
+# equivalent phase 2 group
+id2 <- c(id2_1_25, id2_2_25, id2_1_30, id2_2_30, id2_1_35, id2_2_35)
+
+# all the IDs in the phase 1 (contacted) and phase 2 (not contacted)
+id <- c(id1, id2)
+df <- data.frame(InternalID = id)
+
+df <- df %>%
+  mutate(Phase = InternalID %in% id1) # Phase is 'TRUE' if Phase 1
+
+# as of 14th November 2019, the CSV list of those with no CST
+# in the past two years (2 years ago, the CST was 'Pap', which
+# is due in two years)
+noCST1 <- read.csv("TelephoneCST_Phase1_NoCST.csv")
+noCST2 <- read.csv("TelephoneCST_Phase2_NoCST.csv")
+
+noCST1_id <- noCST1 %>% pull(INTERNALID) # just get the IDs
+noCST2_id <- noCST2 %>% pull(INTERNALID)
+noCST_ID <- c(noCST1_id, noCST2_id) # combine the IDs
+
+df <- df %>%
+  mutate(CST = !(InternalID %in% noCST_ID))
+# CST is TRUE if 'not' in the 'no CST' list
+
+seenby_Buddini <- read.csv("20190401CSTBuddini.csv")
+seenby_Buddini_id <- seenby_Buddini %>% pull(INTERNALID)
+
+df <- df %>%
+  mutate(Group2 = InternalID %in% id1b,
+         Buddini = InternalID %in% seenby_Buddini_id)
+# currently 'Group2' are those contacted by BE
+# currently 'Buddini' are those who have previously been seen by BE
+
+refugee_asylum <- read.csv("20190401CSTRefugeeAsylum.csv")
+refugee_asylum_id <- refugee_asylum %>% pull(INTERNALID)
+
+df <- df %>%
+  mutate(refugee = InternalID %in% refugee_asylum_id)
+# those listed as asylum or refugee status
+
+df_tab <- data.frame(CSTfalse = numeric(), CSTtrue = numeric())
+
+a <- by(df$CST, df$CST, length) # both refugee and non-refugee groups, in both phases
+df_tab <- rbind(df_tab, n = data.frame(CSTfalse = a[1], CSTtrue = a[2]))
+a <- by(subset(df$CST, df$Phase), subset(df$CST, df$Phase), length) # phase 1
+df_tab <- rbind(df_tab, Phase1 = data.frame(CSTfalse = a[1], CSTtrue = a[2]))
+a <- by(subset(df$CST, !df$Phase), subset(df$CST, !df$Phase), length) #phase 2
+df_tab <- rbind(df_tab, Phase2 = data.frame(CSTfalse = a[1], CSTtrue = a[2]))
+
+a <- by(subset(df$CST, df$refugee), subset(df$CST, df$refugee), length) # refugee subset
+df_tab <- rbind(df_tab, `n ` = data.frame(CSTfalse = a[1], CSTtrue = a[2])) 
+# extra space avoids duplicate rowname problem
+a <- by(subset(df$CST, df$refugee & df$Phase), subset(df$CST, df$refugee & df$Phase), length)
+df_tab <- rbind(df_tab, `Phase1 ` = data.frame(CSTfalse = a[1], CSTtrue = a[2]))
+a <- by(subset(df$CST, df$refugee & !df$Phase), subset(df$CST, df$refugee & !df$Phase), length)
+df_tab <- rbind(df_tab, `Phase2 `= data.frame(CSTfalse = a[1], CSTtrue = a[2]))
+
+a <- by(subset(df$CST, !df$refugee), subset(df$CST, !df$refugee), length) # non-refugee subset
+df_tab <- rbind(df_tab, `n  ` = data.frame(CSTfalse = a[1], CSTtrue = a[2]))
+a <- by(subset(df$CST, !df$refugee & df$Phase), subset(df$CST, !df$refugee & df$Phase), length)
+df_tab <- rbind(df_tab, `Phase1  ` = data.frame(CSTfalse = a[1], CSTtrue = a[2]))
+a <- by(subset(df$CST, !df$refugee & !df$Phase), subset(df$CST, !df$refugee & !df$Phase), length)
+df_tab <- rbind(df_tab, `Phase2  ` = data.frame(CSTfalse = a[1], CSTtrue = a[2]))
+
+df_tab$CSTfalseProp <- df_tab$CSTfalse/(df_tab$CSTfalse+df_tab$CSTtrue)
+df_tab$CSTtrueProp <- df_tab$CSTtrue/(df_tab$CSTfalse+df_tab$CSTtrue)
+
+df_tab <- df_tab[, c("CSTfalse", "CSTfalseProp", "CSTtrue", "CSTtrueProp")]
+```
+
+
+```{r}
+df_tab %>%
+  mutate(Group = row.names(.),
+         CSTfalseProp = color_tile("#DeF7E9", "#71CA97")(percent(CSTfalseProp, 1)),
+         CSTtrueProp= color_tile("#DeF7E9", "#71CA97")(percent(CSTtrueProp, 1))) %>%
+  dplyr::select(Group, everything()) %>%
+  kable("html", escape = F,
+        col.names = c(" ", "n", "%", "n", "%"))  %>%
+  kable_styling("striped", full_width = F) %>%
+  column_spec(1, width = "10em") %>%
+  row_spec(0, align = "c") %>%
+  add_header_above(c(" " = 1, "CST overdue" = 2, "CST done" = 2)) %>%
+  pack_rows("All", 1, 3) %>%
+  pack_rows("Refugee", 4, 6) %>%
+  pack_rows("Other", 7, 9)
 
 ```
+
+As of 14th November 19, patients aged 25 to 39 years had been contacted by telephone. A
+total of thirty-six (36) patients are in the sub-groups (in ‘Phase 1’) for which telephone
+contact had been attempted. Of these ‘Phase 1’ patients, ten (27.8%) had a recorded
+cervical screening test within the previous two years as of 14th November 2019.
+
+These ‘Phase 1’ groups are compared with patients in the same age range (25 to 39 years)
+who are in the ‘Phase 2’ group which have not yet been contacted by telephone for cervical
+screening. A total of forty-seven (47) patients are in this group. Of these ‘Phase 2’ patients,
+four (8.5%) had a recorded screening test within the previous two years as of 14th
+November 2019.
+
+Telephone-based recall for cervical screening has a positive effect on cervical screening
+rates for patients who are overdue for cervical screening.
+
+The table above suggests that, although patients with a background of refugee/asylumseeker status have a very low rate of cervical screening compared to non-refugee patients (‘Refugee Phase 2’ vs. ‘Other’ Phase 2), the rate of cervical screening is similar if
+telephone-based recall for cervical screening is done (‘Refugee Phase 1’ vs. ‘Other’ Phase 1).
+
+This is also shown visually in the ‘interaction plot’ below.
+
+```{r}
+interaction.plot(df$Phase, df$refugee, df$CST,
+trace.label = "Refugee",
+xlab = "Telephone recall",
+ylab = "Cervical Screening up-to-date (proportion)")
+```
+
+The regression table below compares a logistic regression model which includes a
+background of refugee/asylum-seeker status and interaction effects with telephone-based
+recall (‘PhaseTRUE’ in the regression table below) with a simpler logistic regression model
+(‘Simple model’) which just includes telephone-based recall as the predictor.
+
+```{r}
+model1 <- glm(CST ~ refugee * Phase, family = binomial(link = "logit"), data = df)
+model2 <- stepAIC(model1, trace = FALSE)
+# the 'best' model, combining explanatory power and simplicity, accord ing to the
+# stepwise Akaiki Information Criterion (AIC) selection
+huxreg("Refugee model" = model1, "Simple model" = model2)
+```
+
+The ‘refugee model’ is not superior to the ‘simple model’ according to step-wise model
+selection by Akaike Information Criterion (AIC). Step-wise model selection by AIC on the
+‘refugee model’ yields the ‘simple model’.
+The ‘simple model’, with just the telephone-based recall intervention (‘Phase’, indicating
+‘Phase 1’), shows that there is a significant increase in cervical screening (\(p = 0.027\))
+when telephone-based recall was used.
+
 
 
 ## SQL code
@@ -573,7 +705,7 @@ SELECT *
 FROM BPS_Patients
   WHERE StatusText = 'Active'
   AND Sex = 'Female'
-  AND DOB BETWEEN  DateAdd(Year,-75,'20190401') AND DateAdd(Year,-25,'20190401')
+  AND DOB BETWEEN  DateAdd(Year,-75,'20190301') AND DateAdd(Year,-25,'20190301')
 
 AND InternalID IN (SELECT InternalID
     FROM Visits v
@@ -584,7 +716,7 @@ AND InternalID IN (SELECT InternalID
         AS ProviderName(Name)
         ON v.DrName LIKE ProviderName.Name
 
-    WHERE VisitDate BETWEEN DateAdd(Month,-25,'20190401') AND '20190401'
+    WHERE VisitDate BETWEEN DateAdd(Year,-2,'20190301') AND '20190301'
     AND RecordStatus = 1
 
     GROUP BY internalid
@@ -594,11 +726,11 @@ AND InternalID IN (SELECT InternalID
     FROM Invoices WHERE InvoiceID IN (SELECT InvoiceID
         FROM Services
             WHERE Recordstatus = 1
-            AND Servicedate > DateAdd(Month, -7, '20190401'))) 
+            AND Servicedate > DateAdd(Month, -6, '20190301'))) 
 
 AND InternalID NOT IN (SELECT InternalID
     FROM PapSmears
-      WHERE PapDate > DATEADD(Month, -45, '20190401')
+      WHERE PapDate > DATEADD(Month, -45, '20190301')
     -- CST not extremely overdue (>45 months old)
     )
 AND InternalID NOT IN (SELECT InternalID
@@ -606,7 +738,7 @@ AND InternalID NOT IN (SELECT InternalID
       WHERE (
         TestName LIKE '%CERVICAL SCREENING%'
          OR TestName LIKE '%PAP SMEAR%')
-      AND ReportDate >  DATEADD(Month, -45, '20190401')
+      AND ReportDate >  DATEADD(Month, -45, '20190301')
     -- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
     )
 AND InternalID NOT IN (SELECT InternalID
@@ -639,7 +771,7 @@ AND InternalID IN (SELECT InternalID
     INNER JOIN (VALUES('%ekanayake%'))
         AS ProviderName(Name)
         ON v.DrName LIKE ProviderName.Name
-    WHERE VisitDate BETWEEN DateAdd(Month,-25,'20190401') AND '20190401'
+    WHERE VisitDate BETWEEN DateAdd(Year,-2,'20190301') AND '20190301'
     AND RecordStatus = 1
 
     GROUP BY internalid
