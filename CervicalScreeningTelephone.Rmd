@@ -5,7 +5,7 @@ date: "21st November 2019"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r prelim_setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -65,7 +65,7 @@ Additional revenue if Cervical Outcome Payment achieved
 * One of two surveyors (Dr Buddini, or womens' health nurse) will invite the woman to participate in cervical screening. The invitation will be done by telephone, using a telephone interpreter if required.
 * If the invitation is accepted, an appointment is made for cervical screening.
 
-```{r message = FALSE, results = 'hide', warning = FALSE}
+```{r setup, message = FALSE, results = 'hide', warning = FALSE, echo = FALSE}
 library(MASS) # has its own 'select' function!
 library(tidyverse)
 library(dagitty)
@@ -79,11 +79,10 @@ library(huxtable)
 
 ## Theory of Change graph
 
-```{r}
+```{r theory-of-change, echo = FALSE}
 dag <- downloadGraph("dagitty.net/mannE14")
 # data for directed acyclic graph model of intervention
 # graph create with dagitty at www.dagitty.net
-
 ```
 
 ```{r eval=FALSE, echo=FALSE, fig.width=12, fig.height=8}
@@ -93,7 +92,7 @@ plot(dag)
 
 ![](cervicalscreeningtelephone.svg)
 
-## Logframe
+## Logical framework
 
 -----------------------------------------------------------------------------------
 Objectives    Indicator              Verification         Assumptions/Threats
@@ -174,6 +173,9 @@ cancer
 
 --------------------------------------------------------------------------------------
 
+
+
+
 ## Variables to measure
 
 * **Age**
@@ -193,18 +195,17 @@ cancer
 * **Cervical screening changes requiring review or referral**
 * **Referral to gynaecologist as result of cervical screening**
 
-# Code and processing
+# Population
 
-## Read Data
-
-```{r}
+```{r read-data, echo = FALSE}
 population <- as_tibble(read.csv("20190301CSTpopulation.csv"))
 seen_Buddini <- as_tibble(read.csv("20190301CSTBuddini.csv"))
 refugeeasylum <- as_tibble(read.csv("20190301CSTRefugeeAsylum.csv"))
 ```
 
-## Convert data
-```{r}
+Summary
+
+```{r convert-data, echo = FALSE}
 # Calculate age
 # 
 # By default, calculates the typical "age in years", with a
@@ -226,9 +227,9 @@ refugeeasylum <- as_tibble(read.csv("20190301CSTRefugeeAsylum.csv"))
 # https://stackoverflow.com/questions/27096485/change-a-column-from-birth-date-to-age-in-r
 # requires library 'lubridate'
 age <- function(dob, age.day = today(), units = "years", floor = TRUE) {
-    calc.age = interval(dob, age.day) / duration(num = 1, units = units)
-    if (floor) return(as.integer(floor(calc.age)))
-    return(calc.age)
+  calc.age = interval(dob, age.day) / duration(num = 1, units = units)
+  if (floor) return(as.integer(floor(calc.age)))
+  return(calc.age)
 }
 
 population <- population %>%
@@ -252,9 +253,8 @@ population <- population %>%
 
 population %>%
   dplyr::select("DOB", "Age", "SeenBuddini", "RefugeeOrAsylum",
-           "Subgroup", "AgeGroup5") %>%
+                "Subgroup", "AgeGroup5") %>%
   summary()
-
 ```
 
 ## Population overview
@@ -263,7 +263,7 @@ Number of patients at each age group, and whether they have a recorded
 refugee or asylum seeker background or seen by Dr Buddini in the past
 two years.
 
-```{r}
+```{r overview, echo = FALSE, message = FALSE}
 ggplot(population, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 25)
 ```
@@ -272,9 +272,9 @@ Total population : `r nrow(population)`
 
 ### Power calculation
 
-Previous proportion of under-screened patients who were screened in the three months after March 2018 was 5.2%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
+Previous proportion of under-screened patients who were screened in the three months after March 2018 was 5.2%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05, the
 
-```{r}
+```{r power-calculation, echo = FALSE, message = FALSE}
 power_3month <- power.prop.test(n = nrow(population)/2,
                                 p1 = 0.05185,
                                 # the measured proportion with recorded cervical screen
@@ -288,43 +288,20 @@ paste("Minimum detectable effect : ", power_3month$p2 - power_3month$p1)
 
 ```
 
-This is similar to estimated minimum detectable effect size using the equation:
+For further power calculation workings, including minimum detectable effect size at 6 months, see [the Appendix - Power Calculation Details](#power-calculation-details).
 
-$EffectSize = (t_{1-\kappa}+t_\alpha)*\sqrt{\frac{1}{P(1-P)}}*\sqrt{\frac{\sigma^2}{N}}$
 
-where $t_{1-\kappa}$ is the power, $t_\alpha$ is the significance level, $P$ is the proportion in treatment, $\sigma^2$ is the variance and $N$ is the sample size.
-
-```{r}
-p1 <- 0.05185        # our previously observed proportion of women
-                   # who had cervical screening (CST) over three months
-p2 <- 0.1507374    # our 'guess' of what the 'treatment' group who had CST over
-                   # three months. this guess was actually informed by
-                   # above power calculation, however!
-p_avg <- (p1+p2)/2 # the average proportion of women who might
-                   # have cervical screening at the end of the study
-                   # variance of binomial is p(1-p)
-
-abs(qnorm(0.8)+qnorm(0.975))*sqrt(1/((0.5)*(1-0.5)))*sqrt((p_avg)*(1-p_avg)/290)
-```
-
-Previous proportion of under-screened patients who were screened in the six months after March 2018 was 8.9%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
-
-```{r}
-power.prop.test(n = nrow(population)/2,
-                p1 = 0.08889,
-                # the measured proportion with recorded cervical screen
-                # under 'control' conditions
-                power=0.8, sig.level=0.05,
-                alternative = "two.sided")
-```
-
-## Choosing treatment and control groups
+## Phase 1 and Phase 2 group allocation
 
 Complete randomization within sub-groups defined by age (5 years groups),
 of known refugee or asylum seeker background, and whether seen by 
 Dr Buddini in the past two years.
 
-```{r}
+Two surveyors were initially planned. One of whom was Dr Buddini.
+Each of the phase 1 and phase 2 were into two sub-groups for allocation
+to the surveyors.
+
+```{r random-allocation, echo = FALSE, message = FALSE}
 set.seed(215936)
 # set random number seed
 # chosen by time on my watch at that particular second
@@ -343,7 +320,7 @@ for (i in levels(population$AgeGroup5)) {
     subsection <- population[population$AgeGroup5 == i & population$Subgroup == j,]
     subsection$rank <- runif(nrow(subsection))
     if ((nrow(subsection) %% 2) == 1)
-      {coinflip <- 1 - coinflip} # toggle from favouring treatment or control
+    {coinflip <- 1 - coinflip} # toggle from favouring treatment or control
     new_control <- top_n(subsection, as.integer(nrow(subsection)/2 + coinflip*.5), rank)
     new_treatment <- anti_join(subsection, new_control, by = "INTERNALID")
     control <- rbind(control, new_control)
@@ -353,26 +330,7 @@ for (i in levels(population$AgeGroup5)) {
 
 ```
 
-## Treatment group
-
-```{r}
-ggplot(treatment, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 24.95)
-```
-
-## Control group
-
-```{r}
-ggplot(control, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 24.95)
-```
-
-## Further divison according to 'survey' team
-
-Two surveyors planned. One of whom will be Dr Buddini.
-Divide each of treatment and survey groups into two sub-groups.
-
-```{r}
+```{r survey-team-allocation, echo = FALSE, message = FALSE}
 set.seed(1603104944)
 
 treatment1 <- NULL
@@ -384,7 +342,7 @@ for (i in levels(treatment$AgeGroup5)) {
     subsection <- treatment[treatment$AgeGroup5 == i & treatment$Subgroup == j,]
     subsection$rank <- runif(nrow(subsection))
     if ((nrow(subsection) %% 2) == 1)
-      {coinflip <- 1 - coinflip} # toggle from favouring one group or another
+    {coinflip <- 1 - coinflip} # toggle from favouring one group or another
     new_treatment1 <- top_n(subsection, as.integer(nrow(subsection)/2 + coinflip*.5), rank)
     new_treatment2 <- anti_join(subsection, new_treatment1, by = "INTERNALID")
     treatment1 <- rbind(treatment1, new_treatment1)
@@ -401,51 +359,16 @@ for (i in levels(control$AgeGroup5)) {
     subsection <- control[control$AgeGroup5 == i & control$Subgroup == j,]
     subsection$rank <- runif(nrow(subsection))
     if ((nrow(subsection) %% 2) == 1)
-      {coinflip <- 1 - coinflip} # toggle from favouring one group or another
+    {coinflip <- 1 - coinflip} # toggle from favouring one group or another
     new_control1 <- top_n(subsection, as.integer(nrow(subsection)/2 + coinflip*.5), rank)
     new_control2 <- anti_join(subsection, new_control1, by = "INTERNALID")
     control1 <- rbind(control1, new_control1)
     control2 <- rbind(control2, new_control2)
   }
 }
-
 ```
 
-Treatment group 1
-
-```{r}
-ggplot(treatment1, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 24.95)
-```
-
-Treatment group 2
-
-```{r}
-ggplot(treatment2, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 24.95)
-```
-
-Control group 1
-
-```{r}
-ggplot(control1, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 24.95)
-```
-
-Control group 2
-
-```{r}
-ggplot(control2, aes(x = Age, fill=Subgroup)) +
-  geom_histogram(binwidth = 5, boundary = 24.95)
-```
-
-## Export sub-groups to Excel file for surveyor use.
-
-Re-attach patient names and demographic details to
-sub-groups, and export to Excel file (Phase 1 = Treat, Phase 2 = Control) for use by
-surveyors.
-
-```{r eval = FALSE}
+```{r excel-export, message = FALSE, echo = FALSE, eval = FALSE}
 # set {r eval = FALSE when 'knitting' to form a HTML file}
 # as identifying data should not be in a public space!
 
@@ -504,8 +427,6 @@ for (i in levels(control1_details$AgeGroup5)) {
 }
 
 saveWorkbook(wb_control, file = "20190301CSTPhase2Groups.xlsx", overwrite = TRUE)
-
-
 ```
 
 ## Results
@@ -514,7 +435,7 @@ Telephone-based recall for cervical screening commenced 1st April 2019. The resu
 
 ‘Refugee’ is the subset of patients who have a recorded entry of ‘refugee’ or ‘asylum-seeker’ in the patient file. ‘Other’ is the remainder, who have no recorded entry of ‘refugee’ or ‘asylum-seeker’ in the patient file.
 
-```{r}
+```{r results, echo = FALSE, message = FALSE}
 # reads results and processes
 
 xl1_name <- '20190401CSTPhase1Groups_results_20191114.xlsx' # results held in these XLSX spreadsheets
@@ -620,7 +541,7 @@ df_tab <- df_tab[, c("CSTfalse", "CSTfalseProp", "CSTtrue", "CSTtrueProp")]
 ```
 
 
-```{r}
+```{r results-table, echo = FALSE, message = FALSE}
 df_tab %>%
   mutate(Group = row.names(.),
          CSTfalseProp = color_tile("#DeF7E9", "#71CA97")(percent(CSTfalseProp, 1)),
@@ -657,11 +578,11 @@ telephone-based recall for cervical screening is done (‘Refugee Phase 1’ vs.
 
 This is also shown visually in the ‘interaction plot’ below.
 
-```{r}
+```{r results-interaction, echo = FALSE, message = FALSE, warning=FALSE}
 interaction.plot(df$Phase, df$refugee, df$CST,
-trace.label = "Refugee",
-xlab = "Telephone recall",
-ylab = "Cervical Screening up-to-date (proportion)")
+                 trace.label = "Refugee",
+                 xlab = "Telephone recall",
+                 ylab = "Cervical Screening up-to-date (proportion)")
 ```
 
 The regression table below compares a logistic regression model which includes a
@@ -669,7 +590,7 @@ background of refugee/asylum-seeker status and interaction effects with telephon
 recall (‘PhaseTRUE’ in the regression table below) with a simpler logistic regression model
 (‘Simple model’) which just includes telephone-based recall as the predictor.
 
-```{r}
+```{r aic, echo = FALSE, message = FALSE, warning = FALSE}
 model1 <- glm(CST ~ refugee * Phase, family = binomial(link = "logit"), data = df)
 model2 <- stepAIC(model1, trace = FALSE)
 # the 'best' model, combining explanatory power and simplicity, accord ing to the
@@ -686,9 +607,9 @@ when telephone-based recall was used.
 
 
 
-## SQL code
+## Appendix
 
-### Finding patients eligible for the study
+### Finding patients eligible for the study - SQL code
 
 Find eligible patients (female, age criteria), who are active patients (defined
 by three or more contacts in the past two years, including one *billed* visit in
@@ -703,50 +624,50 @@ patients, instead of '290' as found using this search.)
 SELECT *
 
 FROM BPS_Patients
-  WHERE StatusText = 'Active'
-  AND Sex = 'Female'
-  AND DOB BETWEEN  DateAdd(Year,-75,'20190301') AND DateAdd(Year,-25,'20190301')
+WHERE StatusText = 'Active'
+AND Sex = 'Female'
+AND DOB BETWEEN  DateAdd(Year,-75,'20190301') AND DateAdd(Year,-25,'20190301')
 
 AND InternalID IN (SELECT InternalID
-    FROM Visits v
-    INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
-            ('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
-            ('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
-            ('%grace ho%'))
-        AS ProviderName(Name)
-        ON v.DrName LIKE ProviderName.Name
+FROM Visits v
+INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
+('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
+('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
+('%grace ho%'))
+AS ProviderName(Name)
+ON v.DrName LIKE ProviderName.Name
 
-    WHERE VisitDate BETWEEN DateAdd(Year,-2,'20190301') AND '20190301'
-    AND RecordStatus = 1
+WHERE VisitDate BETWEEN DateAdd(Year,-2,'20190301') AND '20190301'
+AND RecordStatus = 1
 
-    GROUP BY internalid
-    HAVING count(internalid) >= 3)
+GROUP BY internalid
+HAVING count(internalid) >= 3)
 
 AND InternalID IN (SELECT InternalID
-    FROM Invoices WHERE InvoiceID IN (SELECT InvoiceID
-        FROM Services
-            WHERE Recordstatus = 1
-            AND Servicedate > DateAdd(Month, -6, '20190301'))) 
+FROM Invoices WHERE InvoiceID IN (SELECT InvoiceID
+FROM Services
+WHERE Recordstatus = 1
+AND Servicedate > DateAdd(Month, -6, '20190301'))) 
 
 AND InternalID NOT IN (SELECT InternalID
-    FROM PapSmears
-      WHERE PapDate > DATEADD(Month, -45, '20190301')
-    -- CST not extremely overdue (>45 months old)
-    )
+FROM PapSmears
+WHERE PapDate > DATEADD(Month, -45, '20190301')
+-- CST not extremely overdue (>45 months old)
+)
 AND InternalID NOT IN (SELECT InternalID
-    FROM Investigations
-      WHERE (
-        TestName LIKE '%CERVICAL SCREENING%'
-         OR TestName LIKE '%PAP SMEAR%')
-      AND ReportDate >  DATEADD(Month, -45, '20190301')
-    -- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
-    )
+FROM Investigations
+WHERE (
+TestName LIKE '%CERVICAL SCREENING%'
+OR TestName LIKE '%PAP SMEAR%')
+AND ReportDate >  DATEADD(Month, -45, '20190301')
+-- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
+)
 AND InternalID NOT IN (SELECT InternalID
-    FROM ObsGynDetail
-      WHERE NoPap=1
-    -- for some reason, Pap/CST marked as no longer required
-    )
- 
+FROM ObsGynDetail
+WHERE NoPap=1
+-- for some reason, Pap/CST marked as no longer required
+)
+
 ORDER BY surname, firstname
 
 ```
@@ -755,30 +676,30 @@ ORDER BY surname, firstname
 
 ```{sql eval = FALSE}
 AND (
-    InternalID IN
-        (SELECT InternalID FROM PastHistory WHERE ItemCode = 13155 AND RecordStatus = 1)
-    OR 
-    InternalID IN 
-        (SELECT InternalID FROM PastHistory WHERE ItemCode = 13154 AND RecordStatus = 1)
-    )
+InternalID IN
+(SELECT InternalID FROM PastHistory WHERE ItemCode = 13155 AND RecordStatus = 1)
+OR 
+InternalID IN 
+(SELECT InternalID FROM PastHistory WHERE ItemCode = 13154 AND RecordStatus = 1)
+)
 ```
 
 #### Additional code to detect if contacted by a specific clinician (Dr Buddini).
 
 ```{sql eval = FALSE}
 AND InternalID IN (SELECT InternalID
-    FROM Visits v
-    INNER JOIN (VALUES('%ekanayake%'))
-        AS ProviderName(Name)
-        ON v.DrName LIKE ProviderName.Name
-    WHERE VisitDate BETWEEN DateAdd(Year,-2,'20190301') AND '20190301'
-    AND RecordStatus = 1
+FROM Visits v
+INNER JOIN (VALUES('%ekanayake%'))
+AS ProviderName(Name)
+ON v.DrName LIKE ProviderName.Name
+WHERE VisitDate BETWEEN DateAdd(Year,-2,'20190301') AND '20190301'
+AND RecordStatus = 1
 
-    GROUP BY internalid
-    HAVING count(internalid) >= 1)
+GROUP BY internalid
+HAVING count(internalid) >= 1)
 ```
 
-### Finding historical cervical screening rates among the under-screened
+### Finding historical cervical screening rates among the under-screened - SQL code
 
 Below code finds 'active' patients (5 contacts in two years, include one
 contact within the previous six months) preceding 1st March 2018. Excludes
@@ -795,77 +716,201 @@ screening test in the next three months.
 SELECT *
 
 FROM BPS_Patients
-  WHERE StatusText = 'Active'
-  AND Sex = 'Female'
-  AND DOB BETWEEN  DateAdd(Year,-75,'20180301') AND DateAdd(Year,-25,'20180301')
+WHERE StatusText = 'Active'
+AND Sex = 'Female'
+AND DOB BETWEEN  DateAdd(Year,-75,'20180301') AND DateAdd(Year,-25,'20180301')
 
 AND InternalID IN (SELECT InternalID
-    FROM Visits v
-    INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
-            ('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
-            ('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
-            ('%grace ho%'))
-        AS ProviderName(Name)
-        ON v.DrName LIKE ProviderName.Name
+FROM Visits v
+INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
+('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
+('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
+('%grace ho%'))
+AS ProviderName(Name)
+ON v.DrName LIKE ProviderName.Name
 
-    WHERE VisitDate BETWEEN DateAdd(Year,-2,'20180301') AND '20180301'
-    AND RecordStatus = 1
+WHERE VisitDate BETWEEN DateAdd(Year,-2,'20180301') AND '20180301'
+AND RecordStatus = 1
 
-    GROUP BY internalid
-    HAVING count(internalid) >= 3)
+GROUP BY internalid
+HAVING count(internalid) >= 3)
 
 AND InternalID IN (SELECT InternalID
-    FROM Visits v
-    INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
-            ('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
-            ('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
-            ('%grace ho%'))
-        AS ProviderName(Name)
-        ON v.DrName LIKE ProviderName.Name
+FROM Visits v
+INNER JOIN (VALUES('%bhagwat%'),('%fong%'),('%ekanayake%'),('%shoesmith%'),
+('%plastow%'),('%samarawickrama%'),('%obeyesekere%'),('%chaves%'),
+('%ryan%'),('%mikhail%'),('%haynes%'),('%buckwell%'),('%maxwell%'),
+('%grace ho%'))
+AS ProviderName(Name)
+ON v.DrName LIKE ProviderName.Name
 
-    WHERE VisitDate BETWEEN DateAdd(Month,-6,'20180301') AND '20180301'
-    AND RecordStatus = 1
+WHERE VisitDate BETWEEN DateAdd(Month,-6,'20180301') AND '20180301'
+AND RecordStatus = 1
 
-    GROUP BY internalid
-    HAVING count(internalid) >= 1)
+GROUP BY internalid
+HAVING count(internalid) >= 1)
 
 AND InternalID NOT IN (SELECT InternalID
-    FROM PapSmears
-      WHERE PapDate > DATEADD(Month, -45, '20180301')
-      AND PapDate < '20180301'
-    -- CST not extremely overdue (>45 months old)
-    )
+FROM PapSmears
+WHERE PapDate > DATEADD(Month, -45, '20180301')
+AND PapDate < '20180301'
+-- CST not extremely overdue (>45 months old)
+)
 AND InternalID NOT IN (SELECT InternalID
-    FROM Investigations
-      WHERE (
-        TestName LIKE '%CERVICAL SCREENING%'
-         OR TestName LIKE '%PAP SMEAR%')
-      AND ReportDate >  DATEADD(Month, -45, '20180301')
-      AND ReportDate <  '20180301'
+FROM Investigations
+WHERE (
+TestName LIKE '%CERVICAL SCREENING%'
+OR TestName LIKE '%PAP SMEAR%')
+AND ReportDate >  DATEADD(Month, -45, '20180301')
+AND ReportDate <  '20180301'
 
-    -- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
-    )
+-- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
+)
 AND (InternalID IN (SELECT InternalID
-    FROM PapSmears
-      WHERE PapDate >= '20180301'
-      AND PapDate < DATEADD(Month, 3, '20180301')
-    -- CST done in next three months
-    )
-    OR InternalID IN (SELECT InternalID
-    FROM Investigations
-      WHERE (
-        TestName LIKE '%CERVICAL SCREENING%'
-         OR TestName LIKE '%PAP SMEAR%')
-      AND ReportDate >  '20180301'
-      AND ReportDate <  DATEADD(Month, 3, '20180301')
+FROM PapSmears
+WHERE PapDate >= '20180301'
+AND PapDate < DATEADD(Month, 3, '20180301')
+-- CST done in next three months
+)
+OR InternalID IN (SELECT InternalID
+FROM Investigations
+WHERE (
+TestName LIKE '%CERVICAL SCREENING%'
+OR TestName LIKE '%PAP SMEAR%')
+AND ReportDate >  '20180301'
+AND ReportDate <  DATEADD(Month, 3, '20180301')
 
-    -- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
-    ))
+-- alternative search for Cervical Screening in Investigations (does not always appear in PAP table)
+))
 AND InternalID NOT IN (SELECT InternalID
-    FROM ObsGynDetail
-      WHERE NoPap=1
-    -- for some reason, Pap/CST marked as no longer required
-    )
- 
+FROM ObsGynDetail
+WHERE NoPap=1
+-- for some reason, Pap/CST marked as no longer required
+)
+
 ORDER BY surname, firstname
+```
+
+### Code used to read data, generate subgroups and analyze data
+
+#### Setup
+
+```{r allcode, ref.label = c("setup"), echo = TRUE, eval = FALSE}
+```
+
+#### Theory of change graph
+
+```{r allcode, ref.label = c("theory-of-change"), echo = TRUE, eval = FALSE}
+```
+
+#### Read and convert data
+
+```{r allcode, ref.label = c("read-data", "convert-data", "overview"), echo = TRUE, eval = FALSE}
+```
+
+#### Power calculation details {#power-calculation-details}
+
+Previous proportion of under-screened patients who were screened in the three months after March 2018 was 5.2%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05, the
+
+```{r allcode, ref.label = c("power-calculation"), echo = TRUE, eval = FALSE}
+```
+
+This is similar to estimated minimum detectable effect size using the equation:
+
+$EffectSize = (t_{1-\kappa}+t_\alpha)*\sqrt{\frac{1}{P(1-P)}}*\sqrt{\frac{\sigma^2}{N}}$
+
+where $t_{1-\kappa}$ is the power, $t_\alpha$ is the significance level, $P$ is the proportion in treatment, $\sigma^2$ is the variance and $N$ is the sample size.
+
+```{r echo = TRUE}
+p1 <- 0.05185      # our previously observed proportion of women
+# who had cervical screening (CST) over three months
+p2 <- 0.1507374    # our 'guess' of what the 'treatment' group who had CST over
+# three months. this guess was actually informed by
+# above power calculation, however!
+p_avg <- (p1+p2)/2 # the average proportion of women who might
+# have cervical screening at the end of the study
+# variance of binomial is p(1-p)
+
+abs(qnorm(0.8)+qnorm(0.975))*sqrt(1/((0.5)*(1-0.5)))*sqrt((p_avg)*(1-p_avg)/290)
+```
+
+Previous proportion of under-screened patients who were screened in the six months after March 2018 was 8.9%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05:
+
+```{r}
+power_6month <- power.prop.test(n = nrow(population)/2,
+                                p1 = 0.08889,
+                                # the measured proportion with recorded cervical screen
+                                # under 'control' conditions
+                                power=0.8, sig.level=0.05,
+                                alternative = "two.sided")
+
+power_6month
+
+paste("Minimum detectable effect : ", power_6month$p2 - power_6month$p1)
+```
+
+#### Randomized allocation
+
+```{r allcode, ref.label = c("allocation", "phase1-group-characteristics", "phase2-group-characteristics"), echo = TRUE, eval = FALSE}
+```
+
+##### Phase 1 group characteristics
+
+```{r phase1-group-characteristics, echo = TRUE, message = FALSE}
+ggplot(treatment, aes(x = Age, fill=Subgroup)) +
+  geom_histogram(binwidth = 5, boundary = 24.95)
+```
+
+##### Phase 2 group characteristics
+
+```{r phase2-group-characteristics, echo = TRUE, message = FALSE}
+ggplot(control, aes(x = Age, fill=Subgroup)) +
+  geom_histogram(binwidth = 5, boundary = 24.95)
+```
+
+#### Survey team allocation
+
+```{r allcode, ref.label = c("survey-team-allocation"), echo = TRUE, eval = FALSE}
+```
+
+Phase 1, group 1
+
+```{r eval = FALSE}
+ggplot(treatment1, aes(x = Age, fill=Subgroup)) +
+  geom_histogram(binwidth = 5, boundary = 24.95)
+```
+
+Phase 1, group 2
+
+```{r eval = FALSE}
+ggplot(treatment2, aes(x = Age, fill=Subgroup)) +
+  geom_histogram(binwidth = 5, boundary = 24.95)
+```
+
+Phase 2, group 1
+
+```{r eval = FALSE}
+ggplot(control1, aes(x = Age, fill=Subgroup)) +
+  geom_histogram(binwidth = 5, boundary = 24.95)
+```
+
+Phase 2, group 2
+
+```{r eval = FALSE}
+ggplot(control2, aes(x = Age, fill=Subgroup)) +
+  geom_histogram(binwidth = 5, boundary = 24.95)
+```
+
+#### Export sub-groups to Excel file for surveyor use.
+
+Re-attach patient names and demographic details to
+sub-groups, and export to Excel file (Phase 1 = Treat, Phase 2 = Control) for use by
+surveyors.
+
+```{r allcode, ref.label = c("excel-export"), echo = TRUE, eval = FALSE}
+```
+
+#### Results
+
+```{r allcode, ref.label = c("results", "results-table", "results-interaction", "aic"), echo = TRUE, eval = FALSE}
 ```
