@@ -1,13 +1,18 @@
 ---
-title: "Cervical Screening 2019"
+title: "Cervical Screening - telephone-based recall (2019)"
 author: "Dr. Buddini Ekanayake & Dr. David Fong"
 date: "21st November 2019"
-output: html_document
+output:
+ bookdown::gitbook:
+  css: "css/mystyle.css"
+documentclass: book
 ---
 
 ```{r prelim_setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+# Cervical screening
 
 ## Cervical screening benefits
 
@@ -174,8 +179,6 @@ cancer
 --------------------------------------------------------------------------------------
 
 
-
-
 ## Variables to measure
 
 * **Age**
@@ -195,7 +198,7 @@ cancer
 * **Cervical screening changes requiring review or referral**
 * **Referral to gynaecologist as result of cervical screening**
 
-# Population
+## Population
 
 ```{r read-data, echo = FALSE}
 population <- as_tibble(read.csv("20190301CSTpopulation.csv"))
@@ -257,7 +260,7 @@ population %>%
   summary()
 ```
 
-## Population overview
+### Population overview
 
 Number of patients at each age group, and whether they have a recorded
 refugee or asylum seeker background or seen by Dr Buddini in the past
@@ -270,7 +273,7 @@ ggplot(population, aes(x = Age, fill=Subgroup)) +
 
 Total population : `r nrow(population)`
 
-### Power calculation
+## Power calculation
 
 Previous proportion of under-screened patients who were screened in the three months after March 2018 was 5.2%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05, the
 
@@ -429,7 +432,7 @@ for (i in levels(control1_details$AgeGroup5)) {
 saveWorkbook(wb_control, file = "20190301CSTPhase2Groups.xlsx", overwrite = TRUE)
 ```
 
-## Results
+# Results
 
 Telephone-based recall for cervical screening commenced 1st April 2019. The results shown in the table below are interim results as of 14th November 2019. ‘n’ represents the number of patients in each sub-group. ‘CST done’ indicates that, as of 14th November 2019, a cervical screening test had been recorded within the previous two years. ‘CST overdue’ indicates that no cervical screening had been recorded during the previous two years.
 
@@ -605,11 +608,9 @@ The ‘simple model’, with just the telephone-based recall intervention (‘Ph
 ‘Phase 1’), shows that there is a significant increase in cervical screening (\(p = 0.027\))
 when telephone-based recall was used.
 
+# Appendix A - SQL code
 
-
-## Appendix
-
-### Finding patients eligible for the study - SQL code
+## Finding patients eligible for the study - SQL code
 
 Find eligible patients (female, age criteria), who are active patients (defined
 by three or more contacts in the past two years, including one *billed* visit in
@@ -672,7 +673,7 @@ ORDER BY surname, firstname
 
 ```
 
-#### Additional code to detect if recorded history of refugee or asylum seeker status
+### Additional code to detect if recorded history of refugee or asylum seeker status
 
 ```{sql eval = FALSE}
 AND (
@@ -684,7 +685,7 @@ InternalID IN
 )
 ```
 
-#### Additional code to detect if contacted by a specific clinician (Dr Buddini).
+### Additional code to detect if contacted by a specific clinician (Dr Buddini).
 
 ```{sql eval = FALSE}
 AND InternalID IN (SELECT InternalID
@@ -699,17 +700,17 @@ GROUP BY internalid
 HAVING count(internalid) >= 1)
 ```
 
-### Finding historical cervical screening rates among the under-screened - SQL code
+## Historical cervical screening rates among the under-screened - SQL code
 
-Below code finds 'active' patients (5 contacts in two years, include one
+Code finds 'active' patients (5 contacts in two years, include one
 contact within the previous six months) preceding 1st March 2018. Excludes
 patients who are marked for 'no cervical screening'.
 
-Note that the 'recent' visit definition is different to seeking patients
+The 'recent' visit definition is different to seeking patients
 eligible for the study, because no billing data is available prior to 
 June 2018.
 
-It then further restricts the patients to those who had a cervical
+Further restriction to patients who had a cervical
 screening test in the next three months.
 
 ```{sql eval = FALSE}
@@ -791,24 +792,24 @@ WHERE NoPap=1
 ORDER BY surname, firstname
 ```
 
-### Code used to read data, generate subgroups and analyze data
+# Appendix B - R Code to read data, generate subgroups and analyze data
 
-#### Setup
+## Setup
 
 ```{r allcode, ref.label = c("setup"), echo = TRUE, eval = FALSE}
 ```
 
-#### Theory of change graph
+## Theory of change graph
 
 ```{r allcode, ref.label = c("theory-of-change"), echo = TRUE, eval = FALSE}
 ```
 
-#### Read and convert data
+## Read and convert data
 
 ```{r allcode, ref.label = c("read-data", "convert-data", "overview"), echo = TRUE, eval = FALSE}
 ```
 
-#### Power calculation details {#power-calculation-details}
+## Power calculation details {#power-calculation-details}
 
 Previous proportion of under-screened patients who were screened in the three months after March 2018 was 5.2%. With a populaton of 290 patients, split between two groups, power of 0.8 and significance level of 0.05, the
 
@@ -849,26 +850,26 @@ power_6month
 paste("Minimum detectable effect : ", power_6month$p2 - power_6month$p1)
 ```
 
-#### Randomized allocation
+## Randomized allocation
 
 ```{r allcode, ref.label = c("allocation", "phase1-group-characteristics", "phase2-group-characteristics"), echo = TRUE, eval = FALSE}
 ```
 
-##### Phase 1 group characteristics
+### Phase 1 group characteristics
 
 ```{r phase1-group-characteristics, echo = TRUE, message = FALSE}
 ggplot(treatment, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-##### Phase 2 group characteristics
+### Phase 2 group characteristics
 
 ```{r phase2-group-characteristics, echo = TRUE, message = FALSE}
 ggplot(control, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-#### Survey team allocation
+## Survey team allocation
 
 ```{r allcode, ref.label = c("survey-team-allocation"), echo = TRUE, eval = FALSE}
 ```
@@ -901,7 +902,7 @@ ggplot(control2, aes(x = Age, fill=Subgroup)) +
   geom_histogram(binwidth = 5, boundary = 24.95)
 ```
 
-#### Export sub-groups to Excel file for surveyor use.
+## Export sub-groups to Excel file for surveyor use.
 
 Re-attach patient names and demographic details to
 sub-groups, and export to Excel file (Phase 1 = Treat, Phase 2 = Control) for use by
@@ -910,7 +911,7 @@ surveyors.
 ```{r allcode, ref.label = c("excel-export"), echo = TRUE, eval = FALSE}
 ```
 
-#### Results
+## Results
 
 ```{r allcode, ref.label = c("results", "results-table", "results-interaction", "aic"), echo = TRUE, eval = FALSE}
 ```
