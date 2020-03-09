@@ -4,7 +4,7 @@ author: "Dr. Buddini Ekanayake & Dr. David Fong"
 date: "21st November 2019"
 output:
  bookdown::gitbook:
-  css: "css/mystyle.css"
+  css: "css/mystyle.css" # allows 'wide 1200px' page display
 documentclass: book
 ---
 
