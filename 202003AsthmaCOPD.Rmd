@@ -1,0 +1,348 @@
+---
+title: "COPD & Asthma 2020"
+author: "Laura Dean & Dr. David Fong"
+date: "25th March 2020"
+output:
+  html_document
+bibliography: "My Library.bib"
+always_allow_html: yes
+link_citations: true
+csl: apa.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## COPD & Asthma review benefits
+
+
+## Extent of COPD & Asthma
+
+
+## Current strategies to manage COPD & Asthma
+
+
+
+# COPD & Asthma project
+
+## Methods
+
+* Identify COPD & Asthma
+
+```{r message = FALSE, results = 'hide', warning = FALSE}
+library(tidyverse)
+library(lubridate)
+library(xlsx)
+library(openxlsx)
+library(formattable)
+library(kableExtra)
+```
+
+## Logframe
+
+
+
+## Variables to measure
+
+* **Age** in ten year age groups (age 50 to 89 years)
+* **Sex**
+* **Refugee or asylum seeker** Possible proxy for less English literacy skills, or different health literacy.
+* **RespiratoryMedication** Listed as using respiratory medication
+* **Smoking** Number of medications listed in record
+
+
+## Potential outcome measures
+
+* **Smoking**
+* Number of discharge summaries (reflecting hospital admissions)
+* Home Medication Reviews (HMR)
+* Overall billing
+* Overall billed visits
+* Blood pressure - on target?
+
+# Data and Code
+
+## Read Data
+
+```{r}
+population <- as_tibble(read.xlsx2("../../PEN Clinical Audit/20200324_AsthmaCOPD patients.xlsx",
+                                   startRow = 4, endRow = 353, sheetIndex = 1,
+                                   colClasses = c(ID = 'numeric'),
+                                   stringsAsFactors = FALSE))
+names(population) <- gsub("\\.", "", names(population)) # remove periods '.'
+population <- population %>%
+  filter(!(Surname == "Test")) # get rid of the 'Test' patient!
+
+refugeeorasylum <- as_tibble(read.csv("../../PEN Clinical Audit/20200206RefugeeAsylum.csv",
+                                      stringsAsFactors = FALSE,
+                                      colClasses = c(INTERNALID = 'numeric'))) %>%
+  select(INTERNALID)
+
+respiratory <- as_tibble(read.xlsx2("../../PEN Clinical Audit/202002MedicationRespiratory.xlsx",
+                                    startRow = 4, sheetIndex = 1,
+                                    colClasses = c(ID = 'numeric'),
+                                    stringsAsFactors = FALSE))
+names(respiratory) <- gsub("\\.", "", names(respiratory)) # remove periods '.'
+respiratory <- respiratory[-nrow(respiratory),] %>%
+  select(ID, Medications)
+
+```
+
+## Convert data
+
+```{r}
+# Calculate age
+# 
+# By default, calculates the typical "age in years", with a
+# \code{floor} applied so that you are, e.g., 5 years old from
+# 5th birthday through the day before your 6th birthday. Set
+# \code{floor = FALSE} to return decimal ages, and change \code{units}
+# for units other than years.
+# @param dob date-of-birth, the day to start calculating age.
+# @param age.day the date on which age is to be calculated.
+# @param units unit to measure age in. Defaults to \code{"years"}. Passed to \link{\code{duration}}.
+# @param floor boolean for whether or not to floor the result. Defaults to \code{TRUE}.
+# @return Age in \code{units}. Will be an integer if \code{floor = TRUE}.
+# @examples
+# my.dob <- as.Date('1983-10-20')
+# age(my.dob)
+# age(my.dob, units = "minutes")
+# age(my.dob, floor = FALSE)
+# code by 'Gregor' 
+# https://stackoverflow.com/questions/27096485/change-a-column-from-birth-date-to-age-in-r
+# requires library 'lubridate'
+
+age <- function(dob, age.day = today(), units = "years", floor = TRUE) {
+  calc.age = interval(dob, age.day) / duration(num = 1, units = units)
+  if (floor) return(as.integer(floor(calc.age)))
+  return(calc.age)
+}
+
+population <- population %>%
+  # add columns for whether they have seen the doctor who is making the telephone calls
+  # or are of known refugee or asylum seeker background
+  # (?proxy for low English language literacy)
+  mutate(RefugeeOrAsylum = ID %in% refugeeorasylum$INTERNALID,
+         respiratory = ID %in% respiratory$ID,
+         DOB = as.Date(substr(DOBAge, 1, 10), format = "%d/%m/%Y")) %>% 
+  mutate(Age = age(DOB, age.day = as.Date("2020/02/01"))) %>%
+  # note that age is on 1st Feb 2020
+  mutate(AgeGroup10 = ((Age %/% 10)*10),
+         AgeGroup5 = ((Age %/% 5)* 5)) # 5 and 10-year age groups, labelled with minimum age
+
+population %>%
+  select(c(DOB, Age, Sex, RefugeeOrAsylum,
+           respiratory,
+           AgeGroup10)) %>%
+  summary()
+
+```
+
+## Population overview
+
+Number of patients at each age group, and recorded gender.
+
+```{r}
+ggplot(population, aes(x = Age, fill=Sex)) +
+  geom_histogram(binwidth = 5, boundary = 25) +
+  xlab("Age (years)") +
+  ggtitle("Patients with ")
+```
+
+Total population : `r nrow(population)`
+
+
+
+## Respiratory medication & refugee/asylum seeker cross-table
+
+```{r}
+age10_conditions_crosstable <- function(population) {
+  mc_refugeeorasylum <- as.data.frame.matrix(table(population$AgeGroup10, population$RefugeeOrAsylum)) %>%
+    select(Refugee = `TRUE`)
+  mc_respiratory <- as.data.frame.matrix(table(population$AgeGroup10, population$respiratory)) %>%
+    select(respiratory = `TRUE`)
+  mc_conditions <- cbind(mc_refugeeorasylum, mc_respiratory)
+  return(mc_conditions)
+}
+
+age10_conditions_crosstable(population) %>% 
+  mutate(AgeGroup10 = row.names(.)) %>%
+  mutate_if(is.numeric, function(x) {color_tile("#DeF7E9", "#71CA97")(x)}) %>%
+  select(AgeGroup10, everything()) %>%
+  kable("html", align = c("l", rep("r", 8)),
+        escape = F) %>%
+  kable_styling("hover", full_width = FALSE) %>%
+  column_spec(c(2, 3), width = "2cm", width_min = "1.5cm", bold = TRUE) %>%
+  add_header_above(c(" ", "Conditions" = 2))
+
+```
+
+
+## Choosing Phase 1 and Phase 2 groups
+
+
+```{r}
+set.seed(102141)
+# set random number seed
+# chosen by time on my watch at that particular second
+
+# use 'createDataPartition' function from 'caret' library
+
+# paste which can ignore NA and empty strings
+#
+# Acts the same as regular paste, unless na.rm = TRUE,
+# in which case empty strings and NA are removed
+#
+# based on code by Moody_Mudskipper at
+# https://stackoverflow.com/questions/13673894/suppress-nas-in-paste
+# with additional code from
+# https://stackoverflow.com/questions/14270950/suppress-separator-in-paste-when-values-are-missing
+#
+# @param ... the list of strings to paste
+# @param sep the separator string, " " by default
+# @param collapse the collapse string, NULL by default
+# @param na.rm whether to remove NA and empty strings
+#
+# @return string
+paste2 <- function(..., sep = " ", collapse = NULL, na.rm = FALSE){
+  # in default case, use paste
+  if(!na.rm) return(paste(..., sep = sep, collapse = collapse))
+  # cbind is convenient to recycle, it warns though so use suppressWarnings
+  dots <- suppressWarnings(cbind(...))
+  res <- apply(dots, 1, function(...) {
+    x <- c(...)
+    x <- x[nchar(x) > 0] # get rid of empty strings
+    x <- x[length(x) > 0] # get rid of character(0)
+    if (all(is.na(x))) return(c(""))
+    do.call(paste, as.list(c(na.omit(x), sep = sep)))
+  })
+  if(is.null(collapse)) res else
+    paste(na.omit(res), collapse = collapse)
+}
+
+# balance across possible co-variants of gender, age (10),
+# refugee/asylum seeker, BP, antidepressant medication
+
+population <- population %>%
+  mutate(Subgroup = paste2(Sex,
+                           if_else(RefugeeOrAsylum, "Refugee", as.character(NA)),
+                           if_else(respiratory, "Respiratory", as.character(NA)),
+                           sep = ", ", na.rm = TRUE)) %>%
+  mutate(SubgroupSort = paste(Subgroup)) %>%
+  mutate(Subgroup = if_else(Subgroup == "", "None", Subgroup))
+
+phase1 <- NULL
+phase2 <- NULL
+
+for (i in sort(unique(population$AgeGroup10))) {
+  coinflip <- runif(1)>.5
+  for (k in sort(unique(population$SubgroupSort))) {
+    subsection <- population[population$AgeGroup10 == i & population$SubgroupSort == k,]
+    if (nrow(subsection) > 0) {
+      # print(paste(k, ",", i, ":", nrow(subsection)))
+      subsection$rank <- runif(nrow(subsection))
+      if ((nrow(subsection) %% 2) == 1)
+      {coinflip <- 1 - coinflip} # toggle from favouring phase1 or phase2
+      new_phase2 <- top_n(subsection, as.integer(nrow(subsection)/2 + coinflip*.5), rank)
+      new_phase1 <- anti_join(subsection, new_phase2, by = "ID")
+      phase2 <- rbind(phase2, new_phase2)
+      phase1 <- rbind(phase1, new_phase1)
+    }
+  }
+}
+
+```
+
+## "Phase 1" group
+
+```{r}
+ggplot(phase1, aes(x = AgeGroup10, fill = Subgroup)) +
+  geom_histogram(binwidth = 10, boundary = 24.95)
+```
+
+
+## "Phase 2" group
+
+```{r}
+ggplot(phase2, aes(x = AgeGroup10, fill = Subgroup)) +
+  geom_histogram(binwidth = 10, boundary = 24.95)
+```
+
+
+## Export sub-groups to files for surveyor use.
+
+### Excel file
+
+Re-attach patient names and demographic details to
+sub-groups, and export to Excel file (Phase 1 = Treat, Phase 2 = Control) for use by
+surveyors.
+
+#### Variables added
+
+* *Ineligible* : reason (if appropriate) ineligible for medication review 
+* *Interpreter needed* and *Interpreter used* : indicated in file that interpreter required? interpreter used?
+* *Phone Attempts* : Number of phone attempts
+* *Message left* : Was message left?
+* *Contact made* : was in-person contact made?
+* *Decline appointment - why* : reason appointment declined
+* *Accepted appointment* : Appointment made at coHealth Kensington for CST?
+* *Date of Appt* : Date of appointment made for CST
+* *Attended Appt* : Appointment attended?
+* *Result* : Result of appointment
+* *LMO Review* : Result of LMO review
+* *HMR Referral* : Referred for HMR?
+
+```{r eval = FALSE}
+# set {r eval = FALSE when 'knitting' to form a HTML file}
+# as identifying data should not be in a public space!
+
+RecordingVariables <- matrix(c("Ineligible - reason", "Interpreter needed", "Interpreter used",
+                               "Phone attempts", "Message left", "Contact made",
+                               "Declined appt - why",
+                               "Accepted appt", "Date of appt", "Attended appt",
+                               "Review completed", "Result", "LMO Review", "HMR Referral"),
+                             nrow = 1, byrow = FALSE)
+# list of recording variables to add to Excel sheets
+
+patient_details <- population %>%
+  select(ID, Surname, FirstName, KnownAs, Sex, PhoneHW, PhoneM, Address, City, DOB, Age, 
+         AgeGroup5, AgeGroup10)
+# select columns required for export
+
+phase1_details <- phase1 %>%
+  select(ID) %>% 
+  # will store AgeGroup5 groups in separate sheets
+  left_join(patient_details, by = "ID")
+
+phase2_details <- phase2 %>%
+  select(ID) %>% 
+  # will store AgeGroup5 groups in separate sheets
+  left_join(patient_details, by = "ID")
+
+wb_phase1 <- createWorkbook() # create blank workbook
+
+for (i in sort(unique(phase1_details$AgeGroup5))) {
+  subsection <- phase1_details[phase1_details$AgeGroup5 == i,]
+  sheetname <- paste("Phase 1 - ", i)
+  addWorksheet(wb_phase1, sheetname)
+  writeData(wb_phase1, sheetname, subsection %>% select(-c("AgeGroup5", "AgeGroup10")))
+  writeData(wb_phase1, sheetname, RecordingVariables, startCol = 13, colNames = FALSE)
+}
+
+saveWorkbook(wb_phase1, file = "202003AsthmaCOPDPhase1.xlsx", overwrite = TRUE)
+
+wb_phase2 <- createWorkbook() # create blank workbook
+
+for (i in sort(unique(phase2_details$AgeGroup5))) {
+  subsection <- phase2_details[phase2_details$AgeGroup5 == i,]
+  sheetname <- paste("Phase 2 - ", i)
+  addWorksheet(wb_phase2, sheetname)
+  writeData(wb_phase2, sheetname, subsection %>% select(-c("AgeGroup5", "AgeGroup10")))
+  writeData(wb_phase2, sheetname, RecordingVariables, startCol = 13, colNames = FALSE)
+}
+
+saveWorkbook(wb_phase2, file = "202003AsthmaCOPDPhase2.xlsx", overwrite = TRUE)
+
+```
+
